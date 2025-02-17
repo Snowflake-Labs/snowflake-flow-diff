@@ -329,8 +329,8 @@ public class FlowDiff {
             case INHERITED_CONTEXTS_CHANGED:
                 final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentA();
                 System.out.println("- In the Parameter Context `" + pc.getName()
-                + "`, the list of inherited parameter contexts changed from `"
-                + diff.getValueA() + "`" + " to `" + diff.getValueB() + "`");
+                        + "`, the list of inherited parameter contexts changed from `"
+                        + diff.getValueA() + "`" + " to `" + diff.getValueB() + "`");
                 break;
             case BENDPOINTS_CHANGED:
                 final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
@@ -339,6 +339,14 @@ public class FlowDiff {
                         + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
                         + "` have been changed");
                 break;
+            case PARTITIONING_ATTRIBUTE_CHANGED:
+                final VersionedConnection pacConnection = (VersionedConnection) diff.getComponentA();
+                System.out.println("- The partitioning attribute for the connection `"
+                        + (isEmpty(pacConnection.getName()) ? pacConnection.getSelectedRelationships().toString() : pacConnection.getName())
+                        + "` from `" + pacConnection.getSource().getName() + "` to `" + pacConnection.getDestination().getName()
+                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+
             default:
                 System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
                 System.out.println("  - " + diff.getValueA());
