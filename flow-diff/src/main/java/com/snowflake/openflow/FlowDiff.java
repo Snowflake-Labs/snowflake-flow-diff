@@ -346,6 +346,12 @@ public class FlowDiff {
                         + "` from `" + pacConnection.getSource().getName() + "` to `" + pacConnection.getDestination().getName()
                         + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case PARAMETER_DESCRIPTION_CHANGED:
+                final String paramKey = diff.getFieldName().get();
+                final VersionedParameterContext pdcPc = (VersionedParameterContext) diff.getComponentA();
+                System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
+                        + paramKey + "` has changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
 
             default:
                 System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
