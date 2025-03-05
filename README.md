@@ -62,6 +62,7 @@ Here is an example of what the comment could look like:
 ```markdown
 ### Executing Snowflake Flow Diff for flow: `MyExample`
 
+#### Flow Changes
 - The destination of a connection has changed from `UpdateAttribute` to `InvokeHTTP`
 - A self-loop connection `[success]` has been added on `UpdateAttribute`
 - A connection `[success]` from `My Generate FlowFile Processor` to `UpdateAttribute` has been added
@@ -70,10 +71,12 @@ Here is an example of what the comment could look like:
 - A Parameter Context named `Test Parameter Context` has been added
 - The parameter context `Test Parameter Context` with parameters `{addedParam=newValue}` has been added to the process group `TestingFlowDiff`
 - A Processor named `UpdateAttribute` has been removed
-- The bundle `org.apache.nifi:nifi-standard-nar` has been changed from version `2.1.0` to version `2.2.0`
 - In processor `GenerateFlowFile`, the Run Schedule changed from `1 min` to `* * * * * ?`
 - A Parameter Context named `Another one to delete` has been added
 - A Processor `UpdateAttribute` has been added with the below configuration
   - `Store State` = `Do not store state`
   - `canonical-value-lookup-cache-size` = `100`
+
+#### Bundle Changes
+- The bundle `org.apache.nifi:nifi-standard-nar` has been changed from version `2.1.0` to version `2.2.0`
 ```
