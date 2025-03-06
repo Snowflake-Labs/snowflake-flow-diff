@@ -356,7 +356,8 @@ public class FlowDiff {
                 final VersionedConnection connectionSRC = (VersionedConnection) diff.getComponentA();
                 System.out.println("- The selected relationships for the connection `"
                         + (isEmpty(connectionSRC.getName()) ? connectionSRC.getSelectedRelationships().toString() : connectionSRC.getName())
-                        + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                        + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
+                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
 
             default:
