@@ -352,6 +352,13 @@ public class FlowDiff {
                 System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
                         + paramKey + "` has changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case SELECTED_RELATIONSHIPS_CHANGED:
+                final VersionedConnection connectionSRC = (VersionedConnection) diff.getComponentA();
+                System.out.println("- The selected relationships for the connection `"
+                        + (isEmpty(connectionSRC.getName()) ? connectionSRC.getSelectedRelationships().toString() : connectionSRC.getName())
+                        + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
+                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
 
             default:
                 System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
