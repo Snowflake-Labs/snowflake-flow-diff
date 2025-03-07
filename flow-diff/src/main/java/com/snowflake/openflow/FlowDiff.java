@@ -352,6 +352,22 @@ public class FlowDiff {
                 System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
                         + paramKey + "` has changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case YIELD_DURATION_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case RETRY_COUNT_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case MAX_BACKOFF_PERIOD_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case BACKOFF_MECHANISM_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
 
             default:
                 System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
