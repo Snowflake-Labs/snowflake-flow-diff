@@ -63,10 +63,13 @@ public class FlowDiff {
         String pathB = args[1];
 
         final Set<FlowDifference> diffs = getDiff(pathA, pathB);
+        final Set<String> bundleChanges = new HashSet<>();
 
         System.out.println("> [!NOTE]");
         System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
         System.out.println("### Executing Snowflake Flow Diff for flow: " + flowName);
+
+        System.out.println("#### Flow Changes");
 
         for(FlowDifference diff : diffs) {
 
@@ -229,7 +232,7 @@ public class FlowDiff {
             case BUNDLE_CHANGED:
                 Bundle before = (Bundle) diff.getValueA();
                 Bundle after = (Bundle) diff.getValueB();
-                System.out.println("- The bundle `"
+                bundleChanges.add("- The bundle `"
                         + before.getGroup() + ":" + before.getArtifact()
                         + "` has been changed from version "
                         + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
@@ -359,6 +362,11 @@ public class FlowDiff {
                         + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
                         + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case COMMENTS_CHANGED:
+                System.out.println("- The comment for the " + diff.getComponentA().getComponentType().getTypeName()
+                        + " named `" + diff.getComponentA().getName() + "` has been changed from `"
+                        + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
 
             default:
                 System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
@@ -369,6 +377,12 @@ public class FlowDiff {
                 System.out.println("  - " + diff.getFieldName());
                 break;
             }
+        }
+
+        System.out.println("");
+        System.out.println("#### Bundle Changes");
+        for (String bundleChange : bundleChanges) {
+            System.out.println(bundleChange);
         }
     }
     
