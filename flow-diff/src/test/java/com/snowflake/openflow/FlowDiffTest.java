@@ -103,4 +103,9 @@ class FlowDiffTest {
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.PROPERTY_REMOVED)));
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.PARAMETER_VALUE_CHANGED)));
     }
+
+    @Test
+    void testMain() throws IOException {
+        FlowDiff.main(new String[] { "src/test/resources/flow_v3_config_changes.json", "src/test/resources/flow_v4_parameters.json" });
+    }
 }
