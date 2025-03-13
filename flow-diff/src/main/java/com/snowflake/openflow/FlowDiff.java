@@ -402,10 +402,12 @@ public class FlowDiff {
             }
         }
 
-        System.out.println("");
-        System.out.println("#### Bundle Changes");
-        for (String bundleChange : bundleChanges) {
-            System.out.println(bundleChange);
+        if (bundleChanges.size() > 0) {
+            System.out.println("");
+            System.out.println("#### Bundle Changes");
+            for (String bundleChange : bundleChanges) {
+                System.out.println(bundleChange);
+            }
         }
     }
     
