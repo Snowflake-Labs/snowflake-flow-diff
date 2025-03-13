@@ -362,6 +362,13 @@ public class FlowDiff {
                         + "` from `" + connectionPrio.getSource().getName() + "` to `" + connectionPrio.getDestination().getName()
                         + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case SELECTED_RELATIONSHIPS_CHANGED:
+                final VersionedConnection connectionSRC = (VersionedConnection) diff.getComponentA();
+                System.out.println("- The selected relationships for the connection `"
+                        + (isEmpty(connectionSRC.getName()) ? connectionSRC.getSelectedRelationships().toString() : connectionSRC.getName())
+                        + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
+                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
             case YIELD_DURATION_CHANGED:
                 System.out.println("- In Processor `" + diff.getComponentA().getName()
                         + "`, the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
