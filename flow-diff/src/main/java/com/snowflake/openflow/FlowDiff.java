@@ -362,6 +362,22 @@ public class FlowDiff {
                         + "` from `" + connectionPrio.getSource().getName() + "` to `" + connectionPrio.getDestination().getName()
                         + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
+            case YIELD_DURATION_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case RETRY_COUNT_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case MAX_BACKOFF_PERIOD_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
+            case BACKOFF_MECHANISM_CHANGED:
+                System.out.println("- In Processor `" + diff.getComponentA().getName()
+                        + "`, the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                break;
             case COMMENTS_CHANGED:
                 System.out.println("- The comment for the " + diff.getComponentA().getComponentType().getTypeName()
                         + " named `" + diff.getComponentA().getName() + "` has been changed from `"
