@@ -25,6 +25,7 @@ import org.apache.nifi.flow.Bundle;
 import org.apache.nifi.flow.ComponentType;
 import org.apache.nifi.flow.ConnectableComponent;
 import org.apache.nifi.flow.VersionedComponent;
+import org.apache.nifi.flow.VersionedConfigurableExtension;
 import org.apache.nifi.flow.VersionedConnection;
 import org.apache.nifi.flow.VersionedControllerService;
 import org.apache.nifi.flow.VersionedParameter;
@@ -91,16 +92,14 @@ public class FlowDiff {
                     }
                 } else if (diff.getComponentB().getComponentType().equals(ComponentType.PROCESSOR)) {
                     final VersionedProcessor proc = (VersionedProcessor) diff.getComponentB();
-                    System.out.println("- A Processor"
-                            + (isEmpty(diff.getComponentB().getName()) ? "" : " `" + diff.getComponentB().getName() + "`")
+                    System.out.println("- A " + printComponent(diff.getComponentB())
                             + " has been added with the configuration [" + printProcessorConf(proc) + "] and the below properties:");
-                    printProcessorProperties(proc);
+                    printConfigurableExtensionProperties(proc);
                 } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONTROLLER_SERVICE)) {
                     final VersionedControllerService cs = (VersionedControllerService) diff.getComponentB();
-                    System.out.println("- A Controller Service"
-                            + (isEmpty(diff.getComponentB().getName()) ? "" : " `" + diff.getComponentB().getName() + "`")
+                    System.out.println("- A " + printComponent(diff.getComponentB())
                             + " has been added with the below properties:");
-                    printControllerProperties(cs);
+                    printConfigurableExtensionProperties(cs);
                 } else {
                     System.out.println("- A " + diff.getComponentB().getComponentType().getTypeName()
                             + (isEmpty(diff.getComponentB().getName()) ? "" : " named `" + diff.getComponentB().getName() + "`")
@@ -112,9 +111,7 @@ public class FlowDiff {
                 if (diff.getComponentA().getComponentType().equals(ComponentType.FUNNEL)) {
                     System.out.println("- A Funnel has been removed");
                 } else {
-                    System.out.println("- A " + diff.getComponentA().getComponentType().getTypeName()
-                            + (isEmpty(diff.getComponentA().getName()) ? "" : " named `" + diff.getComponentA().getName() + "`")
-                            + " has been removed");
+                    System.out.println("- A " + printComponent(diff.getComponentA()) + " has been removed");
                 }
                 break;
             }
@@ -124,14 +121,13 @@ public class FlowDiff {
                 break;
             }
             case PROPERTY_CHANGED: {
-                System.out.println("- In the " + diff.getComponentA().getComponentType().getTypeName()
-                        + " named `" + diff.getComponentA().getName() + "`, the value of the property "
+                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the value of the property "
                         + "`" + diff.getFieldName().get() + "` changed from `" + diff.getValueA()
                         + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case CONCURRENT_TASKS_CHANGED: {
-                System.out.println("- In processor `" + diff.getComponentA().getName() + "`, the number of concurrent tasks has been "
+                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the number of concurrent tasks has been "
                         + ((int) diff.getValueA() > (int) diff.getValueB() ? "decreased" : "increased")
                         + " from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
@@ -153,28 +149,23 @@ public class FlowDiff {
                 break;
             }
             case BULLETIN_LEVEL_CHANGED: {
-                System.out.println("- In " + diff.getComponentA().getComponentType() + " named `" + diff.getComponentA().getName()
-                        + "`, the bulletin level has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the bulletin level has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case RUN_DURATION_CHANGED: {
-                final VersionedProcessor processor = (VersionedProcessor) diff.getComponentA();
-                System.out.println("- In processor `" + processor.getName()
-                        + "`, the Run Duration changed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Run Duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case RUN_SCHEDULE_CHANGED: {
-                final VersionedProcessor processor = (VersionedProcessor) diff.getComponentA();
-                System.out.println("- In processor `" + processor.getName()
-                        + "`, the Run Schedule changed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Run Schedule changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case AUTO_TERMINATED_RELATIONSHIPS_CHANGED: {
-                final VersionedProcessor processor = (VersionedProcessor) diff.getComponentA();
-                System.out.println("- In processor `" + processor.getName()
-                        + "`, the list of auto-terminated relationships changed from "
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the list of auto-terminated relationships changed from "
                         + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
@@ -203,30 +194,24 @@ public class FlowDiff {
                 break;
             }
             case PENALTY_DURATION_CHANGED: {
-                final VersionedProcessor processor = (VersionedProcessor) diff.getComponentA();
-                System.out.println("- In processor `" + processor.getName()
-                        + "`, the penalty duration changed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the penalty duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case PARAMETER_CONTEXT_CHANGED: {
                 final VersionedProcessGroup pg = (VersionedProcessGroup) diff.getComponentB();
-                System.out.println("- The parameter context `" + pg.getParameterContextName() + "` with parameters `"
+                System.out.println("- The Parameter Context `" + pg.getParameterContextName() + "` with parameters `"
                         + printParameterContext(parameterContexts.get(pg.getParameterContextName()))
                         + "` has been added to the process group `" + pg.getName() + "`");
                 break;
             }
             case POSITION_CHANGED: {
-                System.out.println("- A " + diff.getComponentA().getComponentType()
-                        + (isEmpty(diff.getComponentA().getName()) ? "" : " named `" + diff.getComponentA().getName() + "`")
-                        + " has been moved to another position");
+                System.out.println("- A " + printComponent(diff.getComponentA()) + " has been moved to another position");
                 break;
             }
             case SCHEDULING_STRATEGY_CHANGED: {
-                final VersionedProcessor processor = (VersionedProcessor) diff.getComponentA();
-                System.out.println("- In processor named `" + processor.getName()
-                        + "`, the Scheduling Strategy changed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Scheduling Strategy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case BUNDLE_CHANGED:
@@ -238,10 +223,8 @@ public class FlowDiff {
                         + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
                 break;
             case NAME_CHANGED: {
-                System.out.println("- A "
-                        + diff.getComponentA().getComponentType()
-                        + " has been renamed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- A " + printComponent(diff.getComponentA())
+                        + " has been renamed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             }
             case PROPERTY_ADDED: {
@@ -261,9 +244,8 @@ public class FlowDiff {
                         propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
                     }
                 }
-                System.out.println("- In " + diff.getComponentA().getComponentType()
-                        + " named `" + diff.getComponentA().getName() + "`, a property has been added: "
-                        + "`" + propKey + "` = `" + propValue + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", a property has been added: " + "`" + propKey + "` = `" + propValue + "`");
                 break;
             }
             case PROPERTY_PARAMETERIZED: {
@@ -275,23 +257,20 @@ public class FlowDiff {
                 if (diff.getComponentB() instanceof VersionedControllerService) {
                     propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
                 }
-                System.out.println("- In " + diff.getComponentA().getComponentType()
-                        + " named `" + diff.getComponentA().getName() + "`, a property is now referencing a parameter: "
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", a property is now referencing a parameter: "
                         + "`" + propKey + "` = `" + propValue + "`");
                 break;
             }
             case PROPERTY_PARAMETERIZATION_REMOVED: {
                 final String propKey = diff.getFieldName().get();
-                System.out.println("- In " + diff.getComponentA().getComponentType()
-                        + " named `" + diff.getComponentA().getName()
-                        + "`, the property `" + propKey + "` is no longer referencing a parameter");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the property `" + propKey + "` is no longer referencing a parameter");
                 break;
             }
             case SCHEDULED_STATE_CHANGED: {
-                System.out.println("- In the " + diff.getComponentA().getComponentType().getTypeName()
-                        + " named `" + diff.getComponentA().getName()
-                        + "`, the Schedule State changed from `"
-                        + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Schedule State changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             } 
             case PARAMETER_ADDED: {
@@ -303,17 +282,12 @@ public class FlowDiff {
                 break;
             }
             case PARAMETER_REMOVED: {
-                final String paramKey = diff.getFieldName().get();
-                final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentB();
-                System.out.println("- In the Parameter Context `"+ pc.getName() + "` the parameter `" + paramKey + "` has been removed");
+                System.out.println("- In the Parameter Context `" + diff.getComponentB().getName()
+                        + "` the parameter `" + diff.getFieldName().get() + "` has been removed");
                 break;
             }
             case PROPERTY_REMOVED: {
-                final String propKey = diff.getFieldName().get();
-                System.out.println("- In "
-                        + diff.getComponentA().getComponentType()
-                        + " named `" + diff.getComponentA().getName()
-                        + "`, the property `" + propKey + "` has been removed");
+                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the property `" + diff.getFieldName().get() + "` has been removed");
                 break;
             }
             case PARAMETER_VALUE_CHANGED: {
@@ -370,25 +344,24 @@ public class FlowDiff {
                         + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             case YIELD_DURATION_CHANGED:
-                System.out.println("- In Processor `" + diff.getComponentA().getName()
-                        + "`, the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             case RETRY_COUNT_CHANGED:
-                System.out.println("- In Processor `" + diff.getComponentA().getName()
-                        + "`, the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             case MAX_BACKOFF_PERIOD_CHANGED:
-                System.out.println("- In Processor `" + diff.getComponentA().getName()
-                        + "`, the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             case BACKOFF_MECHANISM_CHANGED:
-                System.out.println("- In Processor `" + diff.getComponentA().getName()
-                        + "`, the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- In " + printComponent(diff.getComponentA())
+                        + ", the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
             case COMMENTS_CHANGED:
-                System.out.println("- The comment for the " + diff.getComponentA().getComponentType().getTypeName()
-                        + " named `" + diff.getComponentA().getName() + "` has been changed from `"
-                        + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                System.out.println("- The comment for the " + printComponent(diff.getComponentA())
+                        + " has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                 break;
 
             default:
@@ -481,6 +454,18 @@ public class FlowDiff {
         }
     }
 
+    static String printComponent(final VersionedComponent component) {
+        String result = component.getComponentType().getTypeName();
+
+        if (component instanceof VersionedConfigurableExtension) {
+            result += " of type `" + substringAfterLast(((VersionedConfigurableExtension) component).getType(), ".") + "`";
+        }
+
+        result += (isEmpty(component.getName()) ? "" : " named `" + component.getName() + "`");
+
+        return result;
+    }
+
     static String printParameterContext(final VersionedParameterContext pc) {
         final Map<String, String> parameters = new HashMap<>();
         for (VersionedParameter p : pc.getParameters()) {
@@ -493,7 +478,7 @@ public class FlowDiff {
         return parameters.toString();
     }
 
-    static void printProcessorProperties(final VersionedProcessor proc) {
+    static void printConfigurableExtensionProperties(final VersionedConfigurableExtension proc) {
         for (String key : proc.getProperties().keySet()) {
             System.out.println("  - `" + key + "` = `" + proc.getProperties().get(key) + "`");
         }
@@ -506,13 +491,21 @@ public class FlowDiff {
                 + proc.getPenaltyDuration() + "` penalty duration, `" + proc.getYieldDuration() + "` yield duration";
     }
 
-    static void printControllerProperties(final VersionedControllerService cs) {
-        for (String key : cs.getProperties().keySet()) {
-            System.out.println("  - `" + key + "` = `" + cs.getProperties().get(key) + "`");
-        }
-    }
-
     static boolean isEmpty(final String string) {
         return string == null || string.isEmpty();
+    }
+
+    static String substringAfterLast(final String str, final String separator) {
+        if (str == null || str.isEmpty() || separator == null || separator.isEmpty()) {
+            return str;
+        }
+
+        final int pos = str.lastIndexOf(separator);
+
+        if (pos == -1) {
+            return str;
+        }
+
+        return str.substring(pos + separator.length());
     }
 }
