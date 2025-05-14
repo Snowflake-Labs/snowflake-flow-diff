@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-java -jar /flow-diff.jar $1 $2 >> /github/workspace/diff.txt
+java -jar /flow-diff.jar $1 $2 $6 >> /github/workspace/diff.txt
 
 OUTPUT=$(cat /github/workspace/diff.txt | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/\t/    /g' | sed ':a;N;$!ba;s/\n/\\n/g')
 
