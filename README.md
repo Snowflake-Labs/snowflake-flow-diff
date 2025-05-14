@@ -58,6 +58,23 @@ jobs:
           flowB: 'submitted-changes/${{ steps.files.outputs.all_changed_files }}'
 ```
 
+## Checkstyle
+
+Optionally, it is possible to enable a checkstyle check on the new version of the flow. If some violations against NiFi best practices are found, a message will be added to the comment published on the pull request.
+
+To enable checkstyle:
+
+```yaml
+      # Running the diff
+      - name: Snowflake Flow Diff
+        uses: snowflake-labs/snowflake-flow-diff@v0
+        id: flowdiff
+        with:
+          flowA: 'original-code/${{ steps.files.outputs.all_changed_files }}'
+          flowB: 'submitted-changes/${{ steps.files.outputs.all_changed_files }}'
+          checkstyle: true
+```
+
 ## Example
 
 The GitHub Action will automatically publish a comment on the pull request with a comprehensive description of the changes between the flows of the two branches.
@@ -65,6 +82,9 @@ Here is an example of what the comment could look like:
 
 ```markdown
 ### Executing Snowflake Flow Diff for flow: `MyExample`
+
+#### Checkstyle Violations
+- Processor named `UpdateAttribute` is configured with 4 concurrent tasks
 
 #### Flow Changes
 - The destination of a connection has changed from `UpdateAttribute` to `InvokeHTTP`
@@ -77,7 +97,7 @@ Here is an example of what the comment could look like:
 - A Processor of type `UpdateAttribute` named `UpdateAttribute` has been removed
 - In Processor of type `GenerateFlowFile` named `GenerateFlowFile`, the Run Schedule changed from `1 min` to `* * * * * ?`
 - A Parameter Context named `Another one to delete` has been added
-- A Processor of type `UpdateAttribute` named `UpdateAttribute` has been added with the configuration [`ALL` nodes, `1` concurrent tasks, `0ms` run duration, `WARN` bulletin level, `TIMER_DRIVEN` (`0 sec`), `30 sec` penalty duration, `1 sec` yield duration] and the below properties:
+- A Processor of type `UpdateAttribute` named `UpdateAttribute` has been added with the configuration [`ALL` nodes, `4` concurrent tasks, `0ms` run duration, `WARN` bulletin level, `TIMER_DRIVEN` (`0 sec`), `30 sec` penalty duration, `1 sec` yield duration] and the below properties:
   - `Store State` = `Do not store state`
   - `canonical-value-lookup-cache-size` = `100`
 
