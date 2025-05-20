@@ -628,7 +628,11 @@ public class FlowDiff {
     }
 
     static boolean isMultiline(String str) {
-        return str.contains("\n") || str.contains("\r");
+        if (str == null) {
+            return false;
+        } else {
+            return str.contains("\n") || str.contains("\r");
+        }
     }
 
     static String substringAfterLast(final String str, final String separator) {
