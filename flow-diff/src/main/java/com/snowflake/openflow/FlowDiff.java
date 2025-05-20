@@ -61,377 +61,404 @@ public class FlowDiff {
     private static String flowName;
     private static Map<String, VersionedParameterContext> parameterContexts;
     private static Map<String, VersionedProcessGroup> processGroups;
+    private static List<String> checkstyleViolations;
 
     public static void main(String[] args) throws IOException {
 
-        String pathA = args[0];
-        String pathB = args[1];
+        final String pathA = args[0];
+        final String pathB = args[1];
+        final boolean checkstyleEnabled = Boolean.parseBoolean(args[2]);
 
-        final Set<FlowDifference> diffs = getDiff(pathA, pathB);
+        final Set<FlowDifference> diffs = getDiff(pathA, pathB, checkstyleEnabled);
         final Set<String> bundleChanges = new HashSet<>();
 
         System.out.println("> [!NOTE]");
         System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
         System.out.println("### Executing Snowflake Flow Diff for flow: " + flowName);
 
-        System.out.println("#### Flow Changes");
-
-        for(FlowDifference diff : diffs) {
-
-            switch (diff.getDifferenceType()) {
-            case COMPONENT_ADDED: {
-                if (diff.getComponentB().getComponentType().equals(ComponentType.FUNNEL)) {
-                    System.out.println("- A Funnel has been added");
-                } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONNECTION)) {
-                    final VersionedConnection connection = (VersionedConnection) diff.getComponentB();
-                    printConnection(connection);
-                } else if (diff.getComponentB().getComponentType().equals(ComponentType.PROCESSOR)) {
-                    final VersionedProcessor proc = (VersionedProcessor) diff.getComponentB();
-                    System.out.println("- A " + printComponent(diff.getComponentB())
-                            + " has been added with the configuration [" + printProcessorConf(proc) + "] and the below properties:");
-                    printConfigurableExtensionProperties(proc);
-                } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONTROLLER_SERVICE)) {
-                    final VersionedControllerService cs = (VersionedControllerService) diff.getComponentB();
-                    final String pgName = processGroups.get(cs.getGroupIdentifier()).getName();
-                    System.out.println("- A " + printComponent(diff.getComponentB())
-                            + " has been added in Process Group `" + pgName + "` with the below properties:");
-                    printConfigurableExtensionProperties(cs);
-                } else if (diff.getComponentB().getComponentType().equals(ComponentType.LABEL)) {
-                    final VersionedLabel label = (VersionedLabel) diff.getComponentB();
-                    System.out.println("- A Label has been added with the below text:");
-                    System.out.println("```");
-                    System.out.println(label.getLabel());
-                    System.out.println("```");
-                } else if (diff.getComponentB().getComponentType().equals(ComponentType.PARAMETER_CONTEXT)) {
-                    final VersionedParameterContext paramContext = (VersionedParameterContext) diff.getComponentB();
-                    System.out.println("- A Parameter Context named `" + paramContext.getName() + "` with parameters `"
-                            + printParameterContext(paramContext) + "` and inheriting from `"
-                            + paramContext.getInheritedParameterContexts() + "` has been added");
-                } else {
-                    System.out.println("- A " + diff.getComponentB().getComponentType().getTypeName()
-                            + (isEmpty(diff.getComponentB().getName()) ? "" : " named `" + diff.getComponentB().getName() + "`")
-                            + " has been added");
-                }
-                break;
+        if (checkstyleEnabled && checkstyleViolations != null && !checkstyleViolations.isEmpty()) {
+            System.out.println("#### Checkstyle Violations");
+            for (String violation : checkstyleViolations) {
+                System.out.println("- " + violation);
             }
-            case COMPONENT_REMOVED: {
-                if (diff.getComponentA().getComponentType().equals(ComponentType.FUNNEL)) {
-                    System.out.println("- A Funnel has been removed");
-                } else if (diff.getComponentA().getComponentType().equals(ComponentType.CONNECTION)) {
-                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                    if (connection.getSource().getId().equals(connection.getDestination().getId())) {
-                        System.out.println("- A self-loop connection `"
-                                + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                                + "` has been removed from `" + connection.getSource().getName() + "`");
-                    } else {
-                        System.out.println("- A connection `"
-                                + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                                + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                                + "` has been removed");
-                    }
-                } else {
-                    System.out.println("- A " + printComponent(diff.getComponentA()) + " has been removed");
-                }
-                break;
-            }
-            case DESTINATION_CHANGED: {
-                System.out.println("- The destination of a connection has changed from `" + ((ConnectableComponent) diff.getValueA()).getName()
-                        + "` to `" + ((ConnectableComponent) diff.getValueB()).getName() + "`");
-                break;
-            }
-            case PROPERTY_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the value of the property "
-                        + "`" + diff.getFieldName().get() + "` changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
-                break;
-            }
-            case CONCURRENT_TASKS_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the number of concurrent tasks has been "
-                        + ((int) diff.getValueA() > (int) diff.getValueB() ? "decreased" : "increased")
-                        + " from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case BACKPRESSURE_DATA_SIZE_THRESHOLD_CHANGED: {
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The data size backpressure threshold for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case BACKPRESSURE_OBJECT_THRESHOLD_CHANGED: {
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The flowfile number backpressure threshold for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case BULLETIN_LEVEL_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the bulletin level has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case RUN_DURATION_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Run Duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case RUN_SCHEDULE_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Run Schedule changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case AUTO_TERMINATED_RELATIONSHIPS_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the list of auto-terminated relationships changed from "
-                        + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case LOAD_BALANCE_STRATEGY_CHANGED: {
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The load balancing strategy for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case LOAD_BALANCE_COMPRESSION_CHANGED: {
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The load balancing compression for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case FLOWFILE_EXPIRATION_CHANGED: {
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The flow file expiration for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case PENALTY_DURATION_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the penalty duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case PARAMETER_CONTEXT_CHANGED: {
-                final VersionedProcessGroup pg = (VersionedProcessGroup) diff.getComponentB();
-                System.out.println("- The Parameter Context `" + pg.getParameterContextName() + "` with parameters `"
-                        + printParameterContext(parameterContexts.get(pg.getParameterContextName()))
-                        + "` has been added to the process group `" + pg.getName() + "`");
-                break;
-            }
-            case POSITION_CHANGED: {
-                System.out.println("- A " + printComponent(diff.getComponentA()) + " has been moved to another position");
-                break;
-            }
-            case SCHEDULING_STRATEGY_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Scheduling Strategy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case BUNDLE_CHANGED:
-                Bundle before = (Bundle) diff.getValueA();
-                Bundle after = (Bundle) diff.getValueB();
-                bundleChanges.add("- The bundle `"
-                        + before.getGroup() + ":" + before.getArtifact()
-                        + "` has been changed from version "
-                        + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
-                break;
-            case NAME_CHANGED: {
-                System.out.println("- A " + printComponent(diff.getComponentA())
-                        + " has been renamed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            }
-            case PROPERTY_ADDED: {
-                final String propKey = diff.getFieldName().get();
-                String propValue = null;
-                if (diff.getComponentB() instanceof VersionedProcessor) {
-                    if (((VersionedProcessor) diff.getComponentB()).getPropertyDescriptors().get(propKey).isSensitive()) {
-                        propValue = "<Sensitive Value>";
-                    } else {
-                        propValue = ((VersionedProcessor) diff.getComponentB()).getProperties().get(propKey);
-                    }
-                }
-                if (diff.getComponentB() instanceof VersionedControllerService) {
-                    if (((VersionedControllerService) diff.getComponentB()).getPropertyDescriptors().get(propKey).isSensitive()) {
-                        propValue = "<Sensitive Value>";
-                    } else {
-                        propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
-                    }
-                }
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", a property has been added: " + "`" + propKey + "` = `" + propValue + "`");
-                break;
-            }
-            case PROPERTY_PARAMETERIZED: {
-                final String propKey = diff.getFieldName().get();
-                String propValue = null;
-                if (diff.getComponentB() instanceof VersionedProcessor) {
-                    propValue = ((VersionedProcessor) diff.getComponentB()).getProperties().get(propKey);
-                }
-                if (diff.getComponentB() instanceof VersionedControllerService) {
-                    propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
-                }
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", a property is now referencing a parameter: "
-                        + "`" + propKey + "` = `" + propValue + "`");
-                break;
-            }
-            case PROPERTY_PARAMETERIZATION_REMOVED: {
-                final String propKey = diff.getFieldName().get();
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the property `" + propKey + "` is no longer referencing a parameter");
-                break;
-            }
-            case SCHEDULED_STATE_CHANGED: {
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Schedule State changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            } 
-            case PARAMETER_ADDED: {
-                final String paramKey = diff.getFieldName().get();
-                final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentB();
-                final VersionedParameter param = pc.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
-                System.out.println("- In the Parameter Context `" + pc.getName() + "` a parameter has been added: `"
-                        + paramKey + "` = `" + (param.isSensitive() ? "<Sensitive Value>" : param.getValue()) + "`"
-                        + (isEmpty(param.getDescription()) ? "" : " with the description `" + param.getDescription() + "`"));
-                break;
-            }
-            case PARAMETER_REMOVED: {
-                System.out.println("- In the Parameter Context `" + diff.getComponentB().getName()
-                        + "` the parameter `" + diff.getFieldName().get() + "` has been removed");
-                break;
-            }
-            case PROPERTY_REMOVED: {
-                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the property `" + diff.getFieldName().get() + "` has been removed");
-                break;
-            }
-            case PARAMETER_VALUE_CHANGED: {
-                final String paramKey = diff.getFieldName().get();
-                final VersionedParameterContext pcBefore = (VersionedParameterContext) diff.getComponentA();
-                final VersionedParameterContext pcAfter = (VersionedParameterContext) diff.getComponentB();
-                final VersionedParameter paramBefore = pcBefore.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
-                final VersionedParameter paramAfter = pcAfter.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
-                System.out.println("- In the Parameter Context `" + pcAfter.getName()
-                        + "`, the value of the parameter `" + paramKey + "` has changed from "
-                        + printFromTo(paramBefore.isSensitive() ? "<Sensitive Value>" : paramBefore.getValue(),
-                                paramAfter.isSensitive() ? "<Sensitive Value>" : paramAfter.getValue()));
-                break;
-            }
-            case INHERITED_CONTEXTS_CHANGED:
-                final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentA();
-                System.out.println("- In the Parameter Context `" + pc.getName()
-                        + "`, the list of inherited parameter contexts changed from `"
-                        + diff.getValueA() + "`" + " to `" + diff.getValueB() + "`");
-                break;
-            case BENDPOINTS_CHANGED:
-                final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The bending points for the connection `"
-                        + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                        + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + "` have been changed");
-                break;
-            case PARTITIONING_ATTRIBUTE_CHANGED:
-                final VersionedConnection pacConnection = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The partitioning attribute for the connection `"
-                        + (isEmpty(pacConnection.getName()) ? pacConnection.getSelectedRelationships().toString() : pacConnection.getName())
-                        + "` from `" + pacConnection.getSource().getName() + "` to `" + pacConnection.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case PARAMETER_DESCRIPTION_CHANGED:
-                final String paramKey = diff.getFieldName().get();
-                final VersionedParameterContext pdcPc = (VersionedParameterContext) diff.getComponentA();
-                System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
-                        + paramKey + "` has changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
-                break;
-            case PRIORITIZERS_CHANGED:
-                final VersionedConnection connectionPrio = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The prioritizers for the connection `"
-                        + (isEmpty(connectionPrio.getName()) ? connectionPrio.getSelectedRelationships().toString() : connectionPrio.getName())
-                        + "` from `" + connectionPrio.getSource().getName() + "` to `" + connectionPrio.getDestination().getName()
-                        + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case SELECTED_RELATIONSHIPS_CHANGED:
-                final VersionedConnection connectionSRC = (VersionedConnection) diff.getComponentA();
-                System.out.println("- The selected relationships for the connection `"
-                        + (isEmpty(connectionSRC.getName()) ? connectionSRC.getSelectedRelationships().toString() : connectionSRC.getName())
-                        + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
-                        + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case YIELD_DURATION_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case RETRY_COUNT_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case MAX_BACKOFF_PERIOD_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case BACKOFF_MECHANISM_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case COMMENTS_CHANGED:
-                System.out.println("- The comment for the " + printComponent(diff.getComponentA())
-                        + " has been changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
-                break;
-            case RETRIED_RELATIONSHIPS_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the list of retried relationships changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case LABEL_VALUE_CHANGED:
-                System.out.println("- A label has been updated and its text has been changed from "
-                        + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
-                break;
-            case EXECUTION_MODE_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA())
-                        + ", the Execution Mode changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-            case PROPERTY_SENSITIVITY_CHANGED:
-                System.out.println("- In " + printComponent(diff.getComponentA()) + ", the sensitivity of the property `"
-                        + diff.getFieldName().get() + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
-                break;
-
-            default:
-                System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
-                System.out.println("  - " + diff.getValueA());
-                System.out.println("  - " + diff.getValueB());
-                System.out.println("  - " + diff.getComponentA());
-                System.out.println("  - " + diff.getComponentB());
-                System.out.println("  - " + diff.getFieldName());
-                break;
-            }
+            System.out.println("");
         }
 
-        if (bundleChanges.size() > 0) {
-            System.out.println("");
-            System.out.println("#### Bundle Changes");
-            for (String bundleChange : bundleChanges) {
-                System.out.println(bundleChange);
+        if (!diffs.isEmpty()) {
+
+            System.out.println("#### Flow Changes");
+
+            for (FlowDifference diff : diffs) {
+
+                switch (diff.getDifferenceType()) {
+                case COMPONENT_ADDED: {
+                    if (diff.getComponentB().getComponentType().equals(ComponentType.FUNNEL)) {
+                        System.out.println("- A Funnel has been added");
+                    } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONNECTION)) {
+                        final VersionedConnection connection = (VersionedConnection) diff.getComponentB();
+                        printConnection(connection);
+                    } else if (diff.getComponentB().getComponentType().equals(ComponentType.PROCESSOR)) {
+                        final VersionedProcessor proc = (VersionedProcessor) diff.getComponentB();
+                        System.out.println("- A " + printComponent(diff.getComponentB())
+                                + " has been added with the configuration [" + printProcessorConf(proc) + "] and the below properties:");
+                        printConfigurableExtensionProperties(proc);
+                    } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONTROLLER_SERVICE)) {
+                        final VersionedControllerService cs = (VersionedControllerService) diff.getComponentB();
+                        final String pgName = processGroups.get(cs.getGroupIdentifier()).getName();
+                        System.out.println("- A " + printComponent(diff.getComponentB())
+                                + " has been added in Process Group `" + pgName + "` with the below properties:");
+                        printConfigurableExtensionProperties(cs);
+                    } else if (diff.getComponentB().getComponentType().equals(ComponentType.LABEL)) {
+                        final VersionedLabel label = (VersionedLabel) diff.getComponentB();
+                        System.out.println("- A Label has been added with the below text:");
+                        System.out.println("```");
+                        System.out.println(label.getLabel());
+                        System.out.println("```");
+                    } else {
+                        System.out.println("- A " + diff.getComponentB().getComponentType().getTypeName()
+                                + (isEmpty(diff.getComponentB().getName()) ? "" : " named `" + diff.getComponentB().getName() + "`")
+                                + " has been added");
+                    }
+                    break;
+                }
+                case COMPONENT_REMOVED: {
+                    if (diff.getComponentA().getComponentType().equals(ComponentType.FUNNEL)) {
+                        System.out.println("- A Funnel has been removed");
+                    } else if (diff.getComponentA().getComponentType().equals(ComponentType.CONNECTION)) {
+                        final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                        if (connection.getSource().getId().equals(connection.getDestination().getId())) {
+                            System.out.println("- A self-loop connection `"
+                                    + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                                    + "` has been removed from `" + connection.getSource().getName() + "`");
+                        } else {
+                            System.out.println("- A connection `"
+                                    + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                                    + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                                    + "` has been removed");
+                        }
+                    } else {
+                        System.out.println("- A " + printComponent(diff.getComponentA()) + " has been removed");
+                    }
+                    break;
+                }
+                case DESTINATION_CHANGED: {
+                    System.out.println("- The destination of a connection has changed from `" + ((ConnectableComponent) diff.getValueA()).getName()
+                            + "` to `" + ((ConnectableComponent) diff.getValueB()).getName() + "`");
+                    break;
+                }
+                case PROPERTY_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA()) + ", the value of the property "
+                            + "`" + diff.getFieldName().get() + "` changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                    break;
+                }
+                case CONCURRENT_TASKS_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA()) + ", the number of concurrent tasks has been "
+                            + ((int) diff.getValueA() > (int) diff.getValueB() ? "decreased" : "increased")
+                            + " from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case BACKPRESSURE_DATA_SIZE_THRESHOLD_CHANGED: {
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The data size backpressure threshold for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case BACKPRESSURE_OBJECT_THRESHOLD_CHANGED: {
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The flowfile number backpressure threshold for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case BULLETIN_LEVEL_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the bulletin level has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case RUN_DURATION_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Run Duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case RUN_SCHEDULE_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Run Schedule changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case AUTO_TERMINATED_RELATIONSHIPS_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the list of auto-terminated relationships changed from "
+                            + "`" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case LOAD_BALANCE_STRATEGY_CHANGED: {
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The load balancing strategy for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case LOAD_BALANCE_COMPRESSION_CHANGED: {
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The load balancing compression for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case FLOWFILE_EXPIRATION_CHANGED: {
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The flow file expiration for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case PENALTY_DURATION_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the penalty duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case PARAMETER_CONTEXT_CHANGED: {
+                    final VersionedProcessGroup pg = (VersionedProcessGroup) diff.getComponentB();
+                    System.out.println("- The Parameter Context `" + pg.getParameterContextName() + "` with parameters `"
+                            + printParameterContext(parameterContexts.get(pg.getParameterContextName()))
+                            + "` has been added to the process group `" + pg.getName() + "`");
+                    break;
+                }
+                case POSITION_CHANGED: {
+                    System.out.println("- A " + printComponent(diff.getComponentA()) + " has been moved to another position");
+                    break;
+                }
+                case SCHEDULING_STRATEGY_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Scheduling Strategy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case BUNDLE_CHANGED:
+                    Bundle before = (Bundle) diff.getValueA();
+                    Bundle after = (Bundle) diff.getValueB();
+                    bundleChanges.add("- The bundle `"
+                            + before.getGroup() + ":" + before.getArtifact()
+                            + "` has been changed from version "
+                            + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
+                    break;
+                case NAME_CHANGED: {
+                    System.out.println("- A " + printComponent(diff.getComponentA())
+                            + " has been renamed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case PROPERTY_ADDED: {
+                    final String propKey = diff.getFieldName().get();
+                    String propValue = null;
+                    if (diff.getComponentB() instanceof VersionedProcessor) {
+                        if (((VersionedProcessor) diff.getComponentB()).getPropertyDescriptors().get(propKey).isSensitive()) {
+                            propValue = "<Sensitive Value>";
+                        } else {
+                            propValue = ((VersionedProcessor) diff.getComponentB()).getProperties().get(propKey);
+                        }
+                    }
+                    if (diff.getComponentB() instanceof VersionedControllerService) {
+                        if (((VersionedControllerService) diff.getComponentB()).getPropertyDescriptors().get(propKey).isSensitive()) {
+                            propValue = "<Sensitive Value>";
+                        } else {
+                            propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
+                        }
+                    }
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", a property has been added: " + "`" + propKey + "` = `" + propValue + "`");
+                    break;
+                }
+                case PROPERTY_PARAMETERIZED: {
+                    final String propKey = diff.getFieldName().get();
+                    String propValue = null;
+                    if (diff.getComponentB() instanceof VersionedProcessor) {
+                        propValue = ((VersionedProcessor) diff.getComponentB()).getProperties().get(propKey);
+                    }
+                    if (diff.getComponentB() instanceof VersionedControllerService) {
+                        propValue = ((VersionedControllerService) diff.getComponentB()).getProperties().get(propKey);
+                    }
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", a property is now referencing a parameter: "
+                            + "`" + propKey + "` = `" + propValue + "`");
+                    break;
+                }
+                case PROPERTY_PARAMETERIZATION_REMOVED: {
+                    final String propKey = diff.getFieldName().get();
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the property `" + propKey + "` is no longer referencing a parameter");
+                    break;
+                }
+                case SCHEDULED_STATE_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Schedule State changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                }
+                case PARAMETER_ADDED: {
+                    final String paramKey = diff.getFieldName().get();
+                    final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentB();
+                    final VersionedParameter param = pc.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
+                    System.out.println("- In the Parameter Context `" + pc.getName() + "` a parameter has been added: `"
+                            + paramKey + "` = `" + (param.isSensitive() ? "<Sensitive Value>" : param.getValue()) + "`"
+                            + (isEmpty(param.getDescription()) ? "" : " with the description `" + param.getDescription() + "`"));
+                    break;
+                }
+                case PARAMETER_REMOVED: {
+                    System.out.println("- In the Parameter Context `" + diff.getComponentB().getName()
+                            + "` the parameter `" + diff.getFieldName().get() + "` has been removed");
+                    break;
+                }
+                case PROPERTY_REMOVED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA()) + ", the property `" + diff.getFieldName().get() + "` has been removed");
+                    break;
+                }
+                case PARAMETER_VALUE_CHANGED: {
+                    final String paramKey = diff.getFieldName().get();
+                    final VersionedParameterContext pcBefore = (VersionedParameterContext) diff.getComponentA();
+                    final VersionedParameterContext pcAfter = (VersionedParameterContext) diff.getComponentB();
+                    final VersionedParameter paramBefore = pcBefore.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
+                    final VersionedParameter paramAfter = pcAfter.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
+                    System.out.println("- In the Parameter Context `" + pcAfter.getName()
+                            + "`, the value of the parameter `" + paramKey + "` has changed from "
+                            + printFromTo(paramBefore.isSensitive() ? "<Sensitive Value>" : paramBefore.getValue(),
+                                    paramAfter.isSensitive() ? "<Sensitive Value>" : paramAfter.getValue()));
+                    break;
+                }
+                case INHERITED_CONTEXTS_CHANGED:
+                    final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentA();
+                    System.out.println("- In the Parameter Context `" + pc.getName()
+                            + "`, the list of inherited parameter contexts changed from `"
+                            + diff.getValueA() + "`" + " to `" + diff.getValueB() + "`");
+                    break;
+                case BENDPOINTS_CHANGED:
+                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The bending points for the connection `"
+                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
+                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
+                            + "` have been changed");
+                    break;
+                case PARTITIONING_ATTRIBUTE_CHANGED:
+                    final VersionedConnection pacConnection = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The partitioning attribute for the connection `"
+                            + (isEmpty(pacConnection.getName()) ? pacConnection.getSelectedRelationships().toString() : pacConnection.getName())
+                            + "` from `" + pacConnection.getSource().getName() + "` to `" + pacConnection.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case PARAMETER_DESCRIPTION_CHANGED:
+                    final String paramKey = diff.getFieldName().get();
+                    final VersionedParameterContext pdcPc = (VersionedParameterContext) diff.getComponentA();
+                    System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
+                            + paramKey + "` has changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                    break;
+                case PRIORITIZERS_CHANGED:
+                    final VersionedConnection connectionPrio = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The prioritizers for the connection `"
+                            + (isEmpty(connectionPrio.getName()) ? connectionPrio.getSelectedRelationships().toString() : connectionPrio.getName())
+                            + "` from `" + connectionPrio.getSource().getName() + "` to `" + connectionPrio.getDestination().getName()
+                            + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case SELECTED_RELATIONSHIPS_CHANGED:
+                    final VersionedConnection connectionSRC = (VersionedConnection) diff.getComponentA();
+                    System.out.println("- The selected relationships for the connection `"
+                            + (isEmpty(connectionSRC.getName()) ? connectionSRC.getSelectedRelationships().toString() : connectionSRC.getName())
+                            + "` from `" + connectionSRC.getSource().getName() + "` to `" + connectionSRC.getDestination().getName()
+                            + "` has been changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case YIELD_DURATION_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the yield duration changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case RETRY_COUNT_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Number of Retry Attempts changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case MAX_BACKOFF_PERIOD_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Retry Maximum Back Off Period changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case BACKOFF_MECHANISM_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Retry Back Off Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case COMMENTS_CHANGED:
+                    System.out.println("- The comment for the " + printComponent(diff.getComponentA())
+                            + " has been changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                    break;
+                case RETRIED_RELATIONSHIPS_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the list of retried relationships changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case LABEL_VALUE_CHANGED:
+                    System.out.println("- A label has been updated and its text has been changed from "
+                            + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                    break;
+                case EXECUTION_MODE_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the Execution Mode changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case PROPERTY_SENSITIVITY_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA()) + ", the sensitivity of the property `"
+                            + diff.getFieldName().get() + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+
+                default:
+                    System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
+                    System.out.println("  - " + diff.getValueA());
+                    System.out.println("  - " + diff.getValueB());
+                    System.out.println("  - " + diff.getComponentA());
+                    System.out.println("  - " + diff.getComponentB());
+                    System.out.println("  - " + diff.getFieldName());
+                    break;
+                }
+            }
+
+            if (bundleChanges.size() > 0) {
+                System.out.println("");
+                System.out.println("#### Bundle Changes");
+                for (String bundleChange : bundleChanges) {
+                    System.out.println(bundleChange);
+                }
             }
         }
     }
     
-    public static Set<FlowDifference> getDiff(final String pathA, final String pathB) throws IOException {
+    public static Set<FlowDifference> getDiff(final String pathA, final String pathB, final boolean checkstyleEnabled) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         final JsonFactory factory = new JsonFactory(objectMapper);
-        final FlowSnapshotContainer snapshotA = getFlowContainer(pathA, factory);
+        boolean noOriginalFlow = false;
+
+        FlowSnapshotContainer snapshotA = null;
+        try {
+            snapshotA = getFlowContainer(pathA, factory);
+        } catch (Exception e) {
+            // no original flow - meaning that the Github Action is executed against the
+            // first version of the flow
+            noOriginalFlow = true;
+        }
         final FlowSnapshotContainer snapshotB = getFlowContainer(pathB, factory);
 
         processGroups = new HashMap<>();
         VersionedProcessGroup rootPG = snapshotB.getFlowSnapshot().getFlowContents();
         processGroups.put(rootPG.getIdentifier(), rootPG);
         registerProcessGroups(rootPG);
+
+        if (checkstyleEnabled) {
+            checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(rootPG);
+        }
+
+        if (noOriginalFlow) {
+            // we have executed checkstyle if enabled
+            // no original flow, so we are not comparing with anything
+            return Collections.emptySet();
+        }
 
         // identifier is null for parameter contexts, and we know that names are unique so setting name as id
         snapshotA.getFlowSnapshot().getParameterContexts().values().forEach(pc -> pc.setIdentifier(pc.getName()));

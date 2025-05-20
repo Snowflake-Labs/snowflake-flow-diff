@@ -38,6 +38,10 @@ inputs:
     description: 'The number of the issue or pull request in which to create a comment'
     required: true
     default: ${{ github.event.number }}
+  checkstyle:
+    description: 'Enables checkstyle control on the new version of the flow'
+    required: true
+    default: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -47,3 +51,4 @@ runs:
     - ${{ inputs.token }}
     - ${{ inputs.repository }}
     - ${{ inputs.issuenumber }}
+    - ${{ inputs.checkstyle }}
