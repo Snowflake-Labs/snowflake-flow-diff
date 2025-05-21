@@ -106,6 +106,7 @@ class FlowDiffTest {
 
     @Test
     void testMain() throws IOException {
-        FlowDiff.main(new String[] { "src/test/resources/flow_v3_config_changes.json", "src/test/resources/flow_v4_parameters.json" });
+        FlowDiff.main(new String[] { "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
+                "src/test/resources/flow_v4_parameters.json,src/test/resources/flow_v6_parameter_value.json" });
     }
 }

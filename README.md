@@ -6,7 +6,7 @@ This action is brought to you by [Snowflake](https://www.snowflake.com/), don't 
 
 When using the GitHub Flow Registry Client in NiFi to version control your flows, add the below file `.github/workflows/flowdiff.yml` to the repository into which flow definitions are versioned.
 
-Whenever a pull request is opened, reopened or when a new commit is pushed to an existing pull request, this workflow will be triggered and will compare the modified flow in the pull request and will
+Whenever a pull request is opened, reopened or when a new commit is pushed to an existing pull request, this workflow will be triggered and will compare the modified flow(s) in the pull request and will
 automatically comment the pull request with a human readable description of the changes included in the pull request.
 
 ```yaml
@@ -31,15 +31,27 @@ jobs:
           fetch-depth: 0
           path: submitted-changes
 
-      # getting the path of the flow definition that changed (only one expected for now)
+      # getting the path of the flow definition(s) that changed
       - name: Get changed files
         id: files
         run: |
           cd submitted-changes
-          # Get changed files since the merge base
-          changed_file=$(git diff --name-only $(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }}) HEAD | grep -m 1 '\.json$' || true)
-          # Set output (empty if no JSON file found)
-          echo "all_changed_files=$changed_file" >> $GITHUB_OUTPUT
+
+          # 1. grab every changed connector JSON
+          files=$(git diff --name-only $(git merge-base HEAD origin/${{ github.event.pull_request.base.ref }}) HEAD | grep '\.json$')
+
+          # 2. make it a comma-separated list (no trailing comma)
+          bare=$(echo "$files" | tr '\n' ',' | sed 's/,$//')
+
+          # 3. prefix for original-code (flowA)
+          flowA=$(echo "$bare" | sed 's|[^,]\+|original-code/&|g')
+
+          # 4. prefix for submitted-changes (flowB)
+          flowB=$(echo "$bare" | sed 's|[^,]\+|submitted-changes/&|g')
+
+          # 5. export both as outputs
+          echo "flowA=$flowA" >> $GITHUB_OUTPUT
+          echo "flowB=$flowB" >> $GITHUB_OUTPUT
 
       # checking out the code without the change of the PR
       - name: Checkout original code
@@ -54,9 +66,11 @@ jobs:
         uses: snowflake-labs/snowflake-flow-diff@v0
         id: flowdiff
         with:
-          flowA: 'original-code/${{ steps.files.outputs.all_changed_files }}'
-          flowB: 'submitted-changes/${{ steps.files.outputs.all_changed_files }}'
+          flowA: ${{ steps.files.outputs.flowA }}
+          flowB: ${{ steps.files.outputs.flowB }}
 ```
+
+Note - you may want to change `grep  '\.json$'` with a more specific pattern to match your specific requirements.
 
 ## Example
 
