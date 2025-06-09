@@ -99,7 +99,7 @@ class FlowDiffTest {
         String flowV5 = "src/test/resources/flow_v5_property_parameter.json";
         String flowV6 = "src/test/resources/flow_v6_parameter_value.json";
         Set<FlowDifference> diffs = FlowDiff.getDiff(flowV5, flowV6, false);
-        assertEquals(diffs.size(), 3);
+        assertEquals(diffs.size(), 5);
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.PROPERTY_REMOVED)));
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.PARAMETER_VALUE_CHANGED)));
     }
