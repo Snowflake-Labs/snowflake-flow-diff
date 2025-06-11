@@ -69,6 +69,9 @@ public class FlowDiff {
         final List<String> pathsB = List.of(args[1].split(",")).stream().map(String::trim).toList();
 
         final boolean checkstyleEnabled = Boolean.parseBoolean(args[2]);
+        final CheckstyleRulesConfig rulesConfig = args.length > 3 && args[3] != null && !args[3].isEmpty()
+                ? CheckstyleRulesConfig.fromFile(args[3])
+                : null;
 
         System.out.println("> [!NOTE]");
         System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
@@ -89,13 +92,14 @@ public class FlowDiff {
             parameterContexts = new HashMap<>();
             processGroups = new HashMap<>();
 
-            executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled);
+            executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
         }
 
     }
 
-    private static void executeFlowDiffForOneFlow(final String pathA, final String pathB, final boolean checkstyleEnabled) throws IOException {
-        final Set<FlowDifference> diffs = getDiff(pathA, pathB, checkstyleEnabled);
+    private static void executeFlowDiffForOneFlow(final String pathA, final String pathB,
+            final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
+        final Set<FlowDifference> diffs = getDiff(pathA, pathB, checkstyleEnabled, rulesConfig);
         final Set<String> bundleChanges = new HashSet<>();
 
         System.out.println("### Executing Snowflake Flow Diff for flow: " + flowName);
@@ -451,7 +455,8 @@ public class FlowDiff {
         }
     }
 
-    public static Set<FlowDifference> getDiff(final String pathA, final String pathB, final boolean checkstyleEnabled) throws IOException {
+    public static Set<FlowDifference> getDiff(final String pathA, final String pathB,
+            final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
@@ -475,8 +480,15 @@ public class FlowDiff {
         processGroups.put(rootPG.getIdentifier(), rootPG);
         registerProcessGroups(rootPG);
 
+        String plainFlowName = "";
+        if (snapshotA != null && snapshotA.getFlowSnapshot().getFlow() != null) {
+            plainFlowName = snapshotA.getFlowSnapshot().getFlow().getName();
+        } else if (snapshotB.getFlowSnapshot().getFlow() != null) {
+            plainFlowName = snapshotB.getFlowSnapshot().getFlow().getName();
+        }
+
         if (checkstyleEnabled) {
-            checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(snapshotB);
+            checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(snapshotB, plainFlowName, rulesConfig);
         }
 
         if (noOriginalFlow) {
@@ -517,13 +529,7 @@ public class FlowDiff {
                 FlowComparatorVersionedStrategy.DEEP
             );
 
-        if (snapshotA.getFlowSnapshot().getFlow() != null) {
-            flowName = "`" + snapshotA.getFlowSnapshot().getFlow().getName() + "`";
-        } else if (snapshotB.getFlowSnapshot().getFlow() != null) {
-            flowName = "`" + snapshotB.getFlowSnapshot().getFlow().getName() + "`";
-        } else {
-            flowName = "";
-        }
+        flowName = plainFlowName.isEmpty() ? "Unnamed Flow" : "`" + plainFlowName + "`";
         parameterContexts = snapshotB.getFlowSnapshot().getParameterContexts();
 
         final SortedSet<FlowDifference> sortedDiffs = new TreeSet(new Comparator<FlowDifference>() {

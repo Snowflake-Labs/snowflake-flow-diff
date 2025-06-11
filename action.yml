@@ -42,6 +42,9 @@ inputs:
     description: 'Enables checkstyle control on the new version of the flow'
     required: true
     default: false
+  checkstyle-rules:
+    description: 'Path to optional YAML file configuring checkstyle rules'
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -52,3 +55,4 @@ runs:
     - ${{ inputs.repository }}
     - ${{ inputs.issuenumber }}
     - ${{ inputs.checkstyle }}
+    - ${{ inputs.checkstyle-rules }}
