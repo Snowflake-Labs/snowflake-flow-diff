@@ -87,7 +87,32 @@ To enable checkstyle:
           flowA: ${{ steps.files.outputs.flowA }}
           flowB: ${{ steps.files.outputs.flowB }}
           checkstyle: true
+          # optional: path to YAML configuration of the rules
+          checkstyle-rules: submitted-changes/.github/checkstyle/checkstyle-rules.yaml
 ```
+
+The YAML file can be used to include or exclude specific rules and to configure rule parameters. For example:
+
+```yaml
+include:
+  - concurrentTasks
+rules:
+  concurrentTasks:
+    parameters:
+      limit: 2
+    overrides:
+      ".*sql-connector":
+        limit: 4
+    exclude:
+      - "Ignore.*"
+```
+
+At the root level, if `include` is specified, only those rules will be executed. If `exclude` is specified AND `include` is not specified, all rules except the ones specified will be executed. For each rule, it is possible to specify default values for parameters (when supported by the rule, see below), to override parameters for specific flows using a regular expression against the flow name, and to exclude flows using a regular expression.
+
+Available rules:
+- `concurrentTasks` to check the number of concurrent tasks and define an upper limit (parameter: `limit`, default value is 2)
+- `snapshotMetadata` to check that the flow snapshot metadata is present in the file
+- `emptyParameter` to check that no parameter is set to an empty string
 
 ## Example
 

@@ -154,6 +154,8 @@
       "properties" : {
         "Request Content-Encoding" : "DISABLED",
         "nonSens" : "#{addedParam}",
+        "nonSensBis" : "#{should Have Default}",
+        "nonSensTer" : "#{'should Not Have Default'}",
         "Request Multipart Form-Data Filename Enabled" : "true",
         "Request Chunked Transfer-Encoding Enabled" : "false",
         "HTTP/2 Disabled" : "False",
@@ -631,6 +633,17 @@
         "provided" : false,
         "sensitive" : false,
         "value" : "newValue"
+      }, {
+        "description" : "",
+        "name" : "should Not Have Default",
+        "provided" : false,
+        "sensitive" : false,
+        "value": "default"
+      }, {
+        "description" : "",
+        "name" : "should Have Default",
+        "provided" : false,
+        "sensitive" : false
       } ]
     }
   },

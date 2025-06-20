@@ -24,6 +24,10 @@
             <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
+
+    <prerequisites>
+        <maven>3.9.10</maven>
+    </prerequisites>
  
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -32,8 +36,8 @@
         <nifi-api.version>2.1.0</nifi-api.version>
         <nifi-framework.version>2.4.0</nifi-framework.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <jackson.version>2.19.0</jackson.version>
-        <junit.version>5.12.2</junit.version>
+        <jackson.version>2.19.1</jackson.version>
+        <junit.version>5.13.1</junit.version>
     </properties>
  
     <dependencies>
@@ -81,6 +85,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <dependency>

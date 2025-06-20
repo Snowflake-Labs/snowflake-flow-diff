@@ -16,71 +16,30 @@
  */
 package com.snowflake.openflow;
 
-import org.apache.nifi.flow.VersionedParameter;
-import org.apache.nifi.flow.VersionedProcessGroup;
-import org.apache.nifi.flow.VersionedProcessor;
+import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig;
+import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
+import com.snowflake.openflow.checkstyle.DefaultCheckstyleRules;
 import org.apache.nifi.registry.flow.FlowSnapshotContainer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class FlowCheckstyle {
 
-    public static List<String> getCheckstyleViolations(final FlowSnapshotContainer flowSnapshotContainer) {
+    public static final List<String> DEFAULT_CHECKSTYLE_RULES = Arrays.stream(DefaultCheckstyleRules.values()).map(DefaultCheckstyleRules::id).toList();
+
+    public static List<String> getCheckstyleViolations(final FlowSnapshotContainer flowSnapshotContainer, final String flowName, final CheckstyleRulesConfig config) {
         final List<String> violations = new ArrayList<>();
-        VersionedProcessGroup rootProcessGroup = flowSnapshotContainer.getFlowSnapshot().getFlowContents();
+        final List<String> includes = config == null || config.include() == null ? DEFAULT_CHECKSTYLE_RULES : config.include();
+        final List<String> excludes = config == null || config.exclude() == null || config.include() != null ? List.of() : config.exclude();
 
-        // check concurrent tasks
-        violations.addAll(checkConcurrentTasks(rootProcessGroup));
-
-        // check that snapshot metadata is present
-        violations.addAll(checkSnapshotMetadata(flowSnapshotContainer));
-
-        // check that no parameter is set to empty string
-        violations.addAll(checkEmptyParameters(flowSnapshotContainer));
-
-        return violations;
-    }
-
-    private static List<String> checkEmptyParameters(FlowSnapshotContainer flowSnapshotContainer) {
-        final List<String> violations = new ArrayList<>();
-        final List<VersionedParameter> parameters = flowSnapshotContainer.getFlowSnapshot()
-                .getParameterContexts()
-                .values()
-                .stream()
-                .flatMap(context -> context.getParameters().stream())
-                .toList();
-
-        for (VersionedParameter parameter : parameters) {
-            if (parameter.getValue() != null && parameter.getValue().isEmpty()) {
-                violations.add("Parameter named `" + parameter.getName() + "` is set to empty string");
-            }
-        }
-
-        return violations;
-    }
-
-    private static List<String> checkSnapshotMetadata(FlowSnapshotContainer flowSnapshotContainer) {
-        final List<String> violations = new ArrayList<>();
-        if (flowSnapshotContainer.getFlowSnapshot().getSnapshotMetadata() == null) {
-            violations.add("Flow snapshot metadata is missing");
-        }
-        return violations;
-    }
-
-    private static List<String> checkConcurrentTasks(VersionedProcessGroup processGroup) {
-        final List<String> violations = new ArrayList<>();
-
-        for (final VersionedProcessGroup childGroup : processGroup.getProcessGroups()) {
-            violations.addAll(checkConcurrentTasks(childGroup));
-        }
-
-        for (final VersionedProcessor processor : processGroup.getProcessors()) {
-            final int concurrentTasks = processor.getConcurrentlySchedulableTaskCount();
-            if (concurrentTasks > 2) {
-                violations.add("Processor named `" + processor.getName() + "` is configured with " + concurrentTasks + " concurrent tasks");
-            }
-        }
+        Arrays.stream(DefaultCheckstyleRules.values())
+                .filter(rule -> rule.ruleApplies(includes, excludes, config, flowName))
+                .forEach(rule -> {
+                    final RuleConfig ruleConfig = config == null || config.rules() == null ? null : config.rules().get(rule.id());
+                    violations.addAll(rule.implementation().check(flowSnapshotContainer, flowName, ruleConfig));
+                });
 
         return violations;
     }
