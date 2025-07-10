@@ -115,6 +115,7 @@ Available rules:
 - `emptyParameter` to check that no parameter is set to an empty string
 - `defaultParameters` to check parameters with a default value (parameter: `defaultParameters`, comma-separated list of parameter names having an expected default value)
 - `unusedParameter` to check if all specified parameters are used in the flow
+- `noSelfLoop` to check if there are self-loop connections in the flow
 
 ## Example
 

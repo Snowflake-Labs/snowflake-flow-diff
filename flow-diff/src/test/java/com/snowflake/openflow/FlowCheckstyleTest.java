@@ -100,4 +100,13 @@ class FlowCheckstyleTest {
         assertTrue(violations.stream().anyMatch(v -> v.contains("Parameter named `newSensitiveParam` is not used anywhere in the flow")));
         assertTrue(violations.stream().anyMatch(v -> v.contains("Parameter named `secured` is not used anywhere in the flow")));
     }
+
+    @Test
+    void testNoSelfLoop() throws IOException {
+        FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v6_parameter_value.json", jsonFactory);
+        CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("noSelfLoop"), null, null);
+        List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("Component named `UpdateAttribute` of type `PROCESSOR` has a self-loop connection")));
+    }
 }
