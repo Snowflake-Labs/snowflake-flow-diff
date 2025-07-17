@@ -20,6 +20,7 @@ import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
 import com.snowflake.openflow.checkstyle.rules.ConcurrentTasksRule;
 import com.snowflake.openflow.checkstyle.rules.DefaultParameterRule;
 import com.snowflake.openflow.checkstyle.rules.EmptyParameterRule;
+import com.snowflake.openflow.checkstyle.rules.EnforcePrioritizer;
 import com.snowflake.openflow.checkstyle.rules.SnapshotMetadataRule;
 import com.snowflake.openflow.checkstyle.rules.UnusedParameterRule;
 
@@ -31,7 +32,8 @@ public enum DefaultCheckstyleRules {
     SNAPSHOT_METADATA("snapshotMetadata", new SnapshotMetadataRule()),
     EMPTY_PARAMETER("emptyParameter", new EmptyParameterRule()),
     DEFAULT_PARAMETERS("defaultParameters", new DefaultParameterRule()),
-    UNUSED_PARAMETER("unusedParameter", new UnusedParameterRule());
+    UNUSED_PARAMETER("unusedParameter", new UnusedParameterRule()),
+    ENFORCE_PRIORITIZER("enforcePrioritizer", new EnforcePrioritizer());
 
     private final String id;
     private final CheckstyleRule implementation;
