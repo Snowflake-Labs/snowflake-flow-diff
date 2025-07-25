@@ -432,6 +432,14 @@ public class FlowDiff {
                 case SIZE_CHANGED, STYLE_CHANGED:
                     // no need to print these, they are not relevant for the user
                     break;
+                case FLOWFILE_CONCURRENCY_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the FlowFile Concurrency changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case FLOWFILE_OUTBOUND_POLICY_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the FlowFile Outbound Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
 
                 default:
                     System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
