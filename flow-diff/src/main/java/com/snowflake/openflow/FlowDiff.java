@@ -418,7 +418,7 @@ public class FlowDiff {
                     System.out.println("- In " + printComponent(diff.getComponentA()) + ", the sensitivity of the property `"
                             + diff.getFieldName().get() + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
-                case SIZE_CHANGED, STYLE_CHANGED, POSITION_CHANGED, BENDPOINTS_CHANGED:
+                case SIZE_CHANGED, STYLE_CHANGED, POSITION_CHANGED, BENDPOINTS_CHANGED, ZINDEX_CHANGED:
                     // no need to print these, they are not relevant for the user
                     break;
 
