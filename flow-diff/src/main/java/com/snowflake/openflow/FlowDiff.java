@@ -261,10 +261,6 @@ public class FlowDiff {
                             + "` has been added to the process group `" + pg.getName() + "`");
                     break;
                 }
-                case POSITION_CHANGED: {
-                    System.out.println("- A " + printComponent(diff.getComponentA()) + " has been moved to another position");
-                    break;
-                }
                 case SCHEDULING_STRATEGY_CHANGED: {
                     System.out.println("- In " + printComponent(diff.getComponentA())
                             + ", the Scheduling Strategy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
@@ -359,13 +355,6 @@ public class FlowDiff {
                             + "`, the list of inherited parameter contexts changed from `"
                             + diff.getValueA() + "`" + " to `" + diff.getValueB() + "`");
                     break;
-                case BENDPOINTS_CHANGED:
-                    final VersionedConnection connection = (VersionedConnection) diff.getComponentA();
-                    System.out.println("- The bending points for the connection `"
-                            + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
-                            + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                            + "` have been changed");
-                    break;
                 case PARTITIONING_ATTRIBUTE_CHANGED:
                     final VersionedConnection pacConnection = (VersionedConnection) diff.getComponentA();
                     System.out.println("- The partitioning attribute for the connection `"
@@ -429,8 +418,16 @@ public class FlowDiff {
                     System.out.println("- In " + printComponent(diff.getComponentA()) + ", the sensitivity of the property `"
                             + diff.getFieldName().get() + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
-                case SIZE_CHANGED, STYLE_CHANGED:
+                case SIZE_CHANGED, STYLE_CHANGED, POSITION_CHANGED, BENDPOINTS_CHANGED, ZINDEX_CHANGED:
                     // no need to print these, they are not relevant for the user
+                    break;
+                case FLOWFILE_CONCURRENCY_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the FlowFile Concurrency changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
+                    break;
+                case FLOWFILE_OUTBOUND_POLICY_CHANGED:
+                    System.out.println("- In " + printComponent(diff.getComponentA())
+                            + ", the FlowFile Outbound Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
 
                 default:
