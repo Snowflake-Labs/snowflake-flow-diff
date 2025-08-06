@@ -26,18 +26,18 @@
     </licenses>
 
     <prerequisites>
-        <maven>3.9.10</maven>
+        <maven>3.9.11</maven>
     </prerequisites>
  
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <nifi-api.version>2.1.0</nifi-api.version>
-        <nifi-framework.version>2.4.0</nifi-framework.version>
+        <nifi-api.version>2.2.0</nifi-api.version>
+        <nifi-framework.version>2.5.0</nifi-framework.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <jackson.version>2.19.1</jackson.version>
-        <junit.version>5.13.1</junit.version>
+        <jackson.version>2.19.2</jackson.version>
+        <junit.version>5.13.4</junit.version>
     </properties>
  
     <dependencies>
