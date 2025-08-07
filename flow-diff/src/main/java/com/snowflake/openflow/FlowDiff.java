@@ -113,9 +113,11 @@ public class FlowDiff {
                 System.out.println("> - " + violation);
             }
             System.out.println("");
+        } else if (checkstyleEnabled && (checkstyleViolations == null || checkstyleViolations.isEmpty())) {
+            System.out.println("#### No Checkstyle Violations found");
         }
 
-        if (!diffs.isEmpty()) {
+        if (diffs != null && !diffs.isEmpty()) {
 
             System.out.println("#### Flow Changes");
 
@@ -448,6 +450,10 @@ public class FlowDiff {
                     System.out.println(bundleChange);
                 }
             }
+        } else if (diffs == null) {
+            System.out.println("#### No changes as this is the first version of the flow");
+        } else {
+            System.out.println("#### No relevant changes found in the flow");
         }
     }
 
@@ -483,6 +489,8 @@ public class FlowDiff {
             plainFlowName = snapshotB.getFlowSnapshot().getFlow().getName();
         }
 
+        flowName = plainFlowName.isEmpty() ? "Unnamed Flow" : "`" + plainFlowName + "`";
+
         if (checkstyleEnabled) {
             checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(snapshotB, plainFlowName, rulesConfig);
         }
@@ -490,7 +498,7 @@ public class FlowDiff {
         if (noOriginalFlow) {
             // we have executed checkstyle if enabled
             // no original flow, so we are not comparing with anything
-            return Collections.emptySet();
+            return null;
         }
 
         // identifier is null for parameter contexts, and we know that names are unique so setting name as id
@@ -525,7 +533,6 @@ public class FlowDiff {
                 FlowComparatorVersionedStrategy.DEEP
             );
 
-        flowName = plainFlowName.isEmpty() ? "Unnamed Flow" : "`" + plainFlowName + "`";
         parameterContexts = snapshotB.getFlowSnapshot().getParameterContexts();
 
         final SortedSet<FlowDifference> sortedDiffs = new TreeSet(new Comparator<FlowDifference>() {
