@@ -29,6 +29,7 @@ import org.apache.nifi.flow.VersionedComponent;
 import org.apache.nifi.flow.VersionedConfigurableExtension;
 import org.apache.nifi.flow.VersionedConnection;
 import org.apache.nifi.flow.VersionedControllerService;
+import org.apache.nifi.flow.VersionedFlowCoordinates;
 import org.apache.nifi.flow.VersionedLabel;
 import org.apache.nifi.flow.VersionedParameter;
 import org.apache.nifi.flow.VersionedParameterContext;
@@ -431,6 +432,13 @@ public class FlowDiff {
                     System.out.println("- In " + printComponent(diff.getComponentA())
                             + ", the FlowFile Outbound Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
+                case VERSIONED_FLOW_COORDINATES_CHANGED:
+                    final VersionedProcessGroup pg = (VersionedProcessGroup) diff.getComponentA();
+                    final VersionedFlowCoordinates vfcBefore = (VersionedFlowCoordinates) diff.getValueA();
+                    final VersionedFlowCoordinates vfcAfter = (VersionedFlowCoordinates) diff.getValueB();
+                    System.out.println("- The Versioned Flow Coordinates for the Process Group `" + pg.getName() + "` have changed: "
+                            + printVFCChanges(vfcBefore, vfcAfter));
+                    break;
 
                 default:
                     System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
@@ -648,6 +656,29 @@ public class FlowDiff {
         }
 
         System.out.println(message);
+    }
+
+    static String printVFCChanges(VersionedFlowCoordinates vfcBefore, VersionedFlowCoordinates vfcAfter) {
+        List<String> changes = new ArrayList<>();
+        if (vfcBefore.getBranch() != vfcAfter.getBranch()) {
+            changes.add("branch changed from `" + vfcBefore.getBranch() + "` to `" + vfcAfter.getBranch() + "`");
+        }
+        if (vfcBefore.getFlowId() != vfcAfter.getFlowId()) {
+            changes.add("flow ID changed from `" + vfcBefore.getFlowId() + "` to `" + vfcAfter.getFlowId() + "`");
+        }
+        if (vfcBefore.getRegistryId() != vfcAfter.getRegistryId()) {
+            changes.add("registry ID changed from `" + vfcBefore.getRegistryId() + "` to `" + vfcAfter.getRegistryId() + "`");
+        }
+        if (vfcBefore.getVersion() != vfcAfter.getVersion()) {
+            changes.add("version changed from `" + vfcBefore.getVersion() + "` to `" + vfcAfter.getVersion() + "`");
+        }
+        if (vfcBefore.getBucketId() != vfcAfter.getBucketId()) {
+            changes.add("bucket ID changed from `" + vfcBefore.getBucketId() + "` to `" + vfcAfter.getBucketId() + "`");
+        }
+        if (vfcBefore.getStorageLocation() != vfcAfter.getStorageLocation()) {
+            changes.add("storage location changed from `" + vfcBefore.getStorageLocation() + "` to `" + vfcAfter.getStorageLocation() + "`");
+        }
+        return String.join(", ", changes);
     }
 
     static String printFromTo(final String from, final String to) {
