@@ -117,6 +117,7 @@ Available rules:
 - `unusedParameter` to check if all specified parameters are used in the flow
 - `noSelfLoop` to check if there are self-loop connections in the flow
 - `enforcePrioritizer` to check if all connections in the flow are set with the configured list of prioritizers (parameter: `prioritizers`, comma-separated list of expected prioritizers, example: `org.apache.nifi.prioritizer.FirstInFirstOutPrioritizer`)
+- `backpressureThreshold` to ensure each connection keeps both data size and object count backpressure thresholds greater than zero
 
 ## Example
 

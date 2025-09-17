@@ -136,4 +136,29 @@ class FlowCheckstyleTest {
         List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
         assertEquals(3, violations.size());
     }
+
+    @Test
+    void testBackpressureThresholdViolations() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v6_parameter_value.json", jsonFactory);
+
+        container.getFlowSnapshot().getFlowContents().getConnections().iterator().next().setBackPressureDataSizeThreshold("0 B");
+        container.getFlowSnapshot().getFlowContents().getConnections().iterator().next().setBackPressureObjectThreshold(0L);
+
+        final CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("backpressureThreshold"), null, null);
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(2, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("data size backpressure threshold")));
+        assertTrue(violations.stream().anyMatch(v -> v.contains("object count backpressure threshold")));
+    }
+
+    @Test
+    void testBackpressureThresholdNoViolationsWhenPositive() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v6_parameter_value.json", jsonFactory);
+
+        final CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("backpressureThreshold"), null, null);
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(0, violations.size());
+    }
 }

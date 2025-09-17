@@ -17,6 +17,7 @@
 package com.snowflake.openflow.checkstyle;
 
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
+import com.snowflake.openflow.checkstyle.rules.BackpressureThresholdRule;
 import com.snowflake.openflow.checkstyle.rules.ConcurrentTasksRule;
 import com.snowflake.openflow.checkstyle.rules.DefaultParameterRule;
 import com.snowflake.openflow.checkstyle.rules.EmptyParameterRule;
@@ -35,7 +36,8 @@ public enum DefaultCheckstyleRules {
     DEFAULT_PARAMETERS("defaultParameters", new DefaultParameterRule()),
     UNUSED_PARAMETER("unusedParameter", new UnusedParameterRule()),
     NO_SELF_LOOP("noSelfLoop", new NoSelfLoopRule()),
-    ENFORCE_PRIORITIZER("enforcePrioritizer", new EnforcePrioritizer());
+    ENFORCE_PRIORITIZER("enforcePrioritizer", new EnforcePrioritizer()),
+    BACKPRESSURE_THRESHOLD("backpressureThreshold", new BackpressureThresholdRule());
 
     private final String id;
     private final CheckstyleRule implementation;
