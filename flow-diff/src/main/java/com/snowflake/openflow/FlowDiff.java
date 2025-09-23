@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -660,25 +661,23 @@ public class FlowDiff {
 
     static String printVFCChanges(VersionedFlowCoordinates vfcBefore, VersionedFlowCoordinates vfcAfter) {
         List<String> changes = new ArrayList<>();
-        if (vfcBefore.getBranch() != vfcAfter.getBranch()) {
-            changes.add("branch changed from `" + vfcBefore.getBranch() + "` to `" + vfcAfter.getBranch() + "`");
-        }
-        if (vfcBefore.getFlowId() != vfcAfter.getFlowId()) {
-            changes.add("flow ID changed from `" + vfcBefore.getFlowId() + "` to `" + vfcAfter.getFlowId() + "`");
-        }
-        if (vfcBefore.getRegistryId() != vfcAfter.getRegistryId()) {
-            changes.add("registry ID changed from `" + vfcBefore.getRegistryId() + "` to `" + vfcAfter.getRegistryId() + "`");
-        }
-        if (vfcBefore.getVersion() != vfcAfter.getVersion()) {
-            changes.add("version changed from `" + vfcBefore.getVersion() + "` to `" + vfcAfter.getVersion() + "`");
-        }
-        if (vfcBefore.getBucketId() != vfcAfter.getBucketId()) {
-            changes.add("bucket ID changed from `" + vfcBefore.getBucketId() + "` to `" + vfcAfter.getBucketId() + "`");
-        }
-        if (vfcBefore.getStorageLocation() != vfcAfter.getStorageLocation()) {
-            changes.add("storage location changed from `" + vfcBefore.getStorageLocation() + "` to `" + vfcAfter.getStorageLocation() + "`");
-        }
+        processVFCChange(vfcBefore.getBranch(), vfcAfter.getBranch(), "branch", changes);
+        processVFCChange(vfcBefore.getBucketId(), vfcAfter.getBucketId(), "bucket", changes);
+        processVFCChange(vfcBefore.getFlowId(), vfcAfter.getFlowId(), "flow ID", changes);
+        processVFCChange(vfcBefore.getVersion(), vfcAfter.getVersion(), "version", changes);
+        processVFCChange(vfcBefore.getRegistryId(), vfcAfter.getRegistryId(), "registry ID", changes);
+        processVFCChange(vfcBefore.getStorageLocation(), vfcAfter.getStorageLocation(), "storage location", changes);
         return String.join(", ", changes);
+    }
+
+    static void processVFCChange(String valueA, String valueB, String elementName, List<String> changes) {
+        if (Objects.equals(valueA, valueB)) {
+            if (valueA != null) {
+                changes.add(elementName + " unchanged (`" + valueA + "`)");
+            }
+        } else {
+            changes.add(elementName + " changed from `" + valueA + "` to `" + valueB + "`");
+        }
     }
 
     static String printFromTo(final String from, final String to) {
