@@ -326,9 +326,19 @@ public class FlowDiff {
                     final String paramKey = diff.getFieldName().get();
                     final VersionedParameterContext pc = (VersionedParameterContext) diff.getComponentB();
                     final VersionedParameter param = pc.getParameters().stream().filter(p -> p.getName().equals(paramKey)).findFirst().get();
+
+                    final String description;
+                    if (isEmpty(param.getDescription())) {
+                        description = "";
+                    } else if (isMultiline(param.getDescription())) {
+                        description = " with the description\n```\n" + param.getDescription() + "\n```";
+                    } else {
+                        description = " with the description `" + param.getDescription() + "`";
+                    }
+
                     System.out.println("- In the Parameter Context `" + pc.getName() + "` a parameter has been added: `"
                             + paramKey + "` = `" + (param.isSensitive() ? "<Sensitive Value>" : param.getValue()) + "`"
-                            + (isEmpty(param.getDescription()) ? "" : " with the description `" + param.getDescription() + "`"));
+                            + description);
                     break;
                 }
                 case PARAMETER_REMOVED: {
