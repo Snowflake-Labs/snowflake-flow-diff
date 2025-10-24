@@ -414,7 +414,7 @@ public class FlowDiff {
                             + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
                     break;
                 case EXECUTION_MODE_CHANGED:
-                    System.out.println("- In " + printComponent(diff.getComponentA())
+                    System.out.println("- In " + printComponent(diff.getComponentB())
                             + ", the Execution Mode changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
                 case PROPERTY_SENSITIVITY_CHANGED:
@@ -425,11 +425,11 @@ public class FlowDiff {
                     // no need to print these, they are not relevant for the user
                     break;
                 case FLOWFILE_CONCURRENCY_CHANGED:
-                    System.out.println("- In " + printComponent(diff.getComponentA())
+                    System.out.println("- In " + printComponent(diff.getComponentB())
                             + ", the FlowFile Concurrency changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
                 case FLOWFILE_OUTBOUND_POLICY_CHANGED:
-                    System.out.println("- In " + printComponent(diff.getComponentA())
+                    System.out.println("- In " + printComponent(diff.getComponentB())
                             + ", the FlowFile Outbound Policy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
                 case VERSIONED_FLOW_COORDINATES_CHANGED:
@@ -468,8 +468,7 @@ public class FlowDiff {
     public static Set<FlowDifference> getDiff(final String pathA, final String pathB,
             final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL));
+        objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         final JsonFactory factory = new JsonFactory(objectMapper);
