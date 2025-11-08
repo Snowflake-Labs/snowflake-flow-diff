@@ -105,9 +105,46 @@ rules:
         limit: 4
     exclude:
       - "Ignore.*"
+    componentExclusions:
+      "ProdFlow.*":
+        - "1a59f65f-8b3a-3db9-982e-e0d334bd7e9c" # processor UUID to ignore
 ```
 
-At the root level, if `include` is specified, only those rules will be executed. If `exclude` is specified AND `include` is not specified, all rules except the ones specified will be executed. For each rule, it is possible to specify default values for parameters (when supported by the rule, see below), to override parameters for specific flows using a regular expression against the flow name, and to exclude flows using a regular expression.
+At the root level, if `include` is specified, only those rules will be executed. If `exclude` is specified AND `include` is not specified, all rules except the ones specified will be executed. For each rule, it is possible to specify default values for parameters (when supported by the rule, see below), to override parameters for specific flows using a regular expression against the flow name, to exclude flows using a regular expression, and to silence violations for specific component UUIDs via `componentExclusions`.
+
+### Component-level exclusions
+
+Some rules (for example `concurrentTasks`, `noSelfLoop`, `enforcePrioritizer`, or `backpressureThreshold`) may need an exception for a single processor or connection while you keep the rule enabled for the rest of the flow. You can scope exclusions down to the UUID under the `componentExclusions` map, keyed by flow-name regular expressions:
+
+```yaml
+include:
+  - noSelfLoop
+rules:
+  noSelfLoop:
+    componentExclusions:
+      "ProductionFlow.*":
+        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+      ".*": # optional global fallback
+        - "50a3b081-d54d-3ad8-b74c-caa7fef59bb2"
+```
+
+When the flow name matches the regex, violations produced for the listed component IDs are ignored, while all other components continue to be checked normally.
+Use the same pattern for rules that operate on connections (for example `enforcePrioritizer` or `backpressureThreshold`) by listing the connection identifiers to suppress.
+
+### Rule identifiers and exclusion targets
+
+The following table summarizes what each rule reports and which identifiers you can expect when configuring `componentExclusions`:
+
+| Rule id | Violation references | `componentExclusions` target |
+| --- | --- | --- |
+| `concurrentTasks` | Processor name and UUID | Processor UUID (`VersionedProcessor#getIdentifier`) |
+| `snapshotMetadata` | Flow name only | _Not applicable_ |
+| `emptyParameter` | Parameter name | _Not applicable_ |
+| `defaultParameters` | Parameter name | _Not applicable_ |
+| `unusedParameter` | Parameter name | _Not applicable_ |
+| `noSelfLoop` | Component name/type and UUID | Processor/Funnel UUID at both ends of the self-loop |
+| `enforcePrioritizer` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
+| `backpressureThreshold` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
 
 Available rules:
 - `concurrentTasks` to check the number of concurrent tasks and define an upper limit (parameter: `limit`, default value is 2)

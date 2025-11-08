@@ -58,26 +58,33 @@ public class EnforcePrioritizer implements CheckstyleRule {
             final List<String> prioritizers = Arrays.stream(prioritizersString.split(","))
                     .map(String::trim)
                     .collect(Collectors.toList());
-            return checkConnectionsPrioritizers(rootProcessGroup, prioritizers, flowName);
+            return checkConnectionsPrioritizers(rootProcessGroup, prioritizers, flowName, config);
         } else {
             // no configuration set, so no violation
             return List.of();
         }
     }
 
-    private List<String> checkConnectionsPrioritizers(final VersionedProcessGroup processGroup, final List<String> prioritizers, final String flowName) {
+    private List<String> checkConnectionsPrioritizers(final VersionedProcessGroup processGroup,
+                                                      final List<String> prioritizers,
+                                                      final String flowName,
+                                                      final RuleConfig ruleConfig) {
         final List<String> violations = new ArrayList<>();
 
         for (final VersionedProcessGroup childGroup : processGroup.getProcessGroups()) {
-            violations.addAll(checkConnectionsPrioritizers(childGroup, prioritizers, flowName));
+            violations.addAll(checkConnectionsPrioritizers(childGroup, prioritizers, flowName, ruleConfig));
         }
 
         for (final VersionedConnection connection : processGroup.getConnections()) {
             final List<String> currentPrioritizers = connection.getPrioritizers();
             if (!sameContentsSorted(prioritizers, currentPrioritizers)) {
+                if (ruleConfig != null && ruleConfig.isComponentExcluded(flowName, connection.getIdentifier())) {
+                    continue;
+                }
                 violations.add("The connection `" + (isEmpty(connection.getName()) ? connection.getSelectedRelationships().toString() : connection.getName())
                         + "` from `" + connection.getSource().getName() + "` to `" + connection.getDestination().getName()
-                        + " is configured with prioritizers `" + currentPrioritizers.toString() + "` but should have " + prioritizers.toString());
+                        + "` (id: `" + connection.getIdentifier() + "`) is configured with prioritizers `" + currentPrioritizers.toString()
+                        + "` but should have " + prioritizers.toString());
             }
         }
 

@@ -35,30 +35,41 @@ public class BackpressureThresholdRule implements CheckstyleRule {
     @Override
     public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
         final VersionedProcessGroup rootProcessGroup = container.getFlowSnapshot().getFlowContents();
-        return checkProcessGroup(rootProcessGroup);
+        return checkProcessGroup(rootProcessGroup, config, flowName);
     }
 
-    private List<String> checkProcessGroup(final VersionedProcessGroup processGroup) {
+    private List<String> checkProcessGroup(final VersionedProcessGroup processGroup,
+                                           final RuleConfig ruleConfig,
+                                           final String flowName) {
         final List<String> violations = new ArrayList<>();
 
         for (final VersionedProcessGroup childGroup : processGroup.getProcessGroups()) {
-            violations.addAll(checkProcessGroup(childGroup));
+            violations.addAll(checkProcessGroup(childGroup, ruleConfig, flowName));
         }
 
         for (final VersionedConnection connection : processGroup.getConnections()) {
-            evaluateConnection(connection, violations);
+            evaluateConnection(connection, violations, ruleConfig, flowName);
         }
 
         return violations;
     }
 
-    private void evaluateConnection(final VersionedConnection connection, final List<String> violations) {
+    private void evaluateConnection(final VersionedConnection connection,
+                                    final List<String> violations,
+                                    final RuleConfig ruleConfig,
+                                    final String flowName) {
+        if (ruleConfig != null && ruleConfig.isComponentExcluded(flowName, connection.getIdentifier())) {
+            return;
+        }
+
         if (isZeroDataSizeThreshold(connection.getBackPressureDataSizeThreshold())) {
-            violations.add("The connection " + describeConnection(connection) + " has data size backpressure threshold set to 0. Configure a positive value to enable backpressure.");
+            violations.add("The connection " + describeConnection(connection) + " (id: `" + connection.getIdentifier()
+                    + "`) has data size backpressure threshold set to 0. Configure a positive value to enable backpressure.");
         }
 
         if (isZeroObjectThreshold(connection.getBackPressureObjectThreshold())) {
-            violations.add("The connection " + describeConnection(connection) + " has object count backpressure threshold set to 0. Configure a positive value to enable backpressure.");
+            violations.add("The connection " + describeConnection(connection) + " (id: `" + connection.getIdentifier()
+                    + "`) has object count backpressure threshold set to 0. Configure a positive value to enable backpressure.");
         }
     }
 
