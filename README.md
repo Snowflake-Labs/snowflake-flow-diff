@@ -89,7 +89,11 @@ To enable checkstyle:
           checkstyle: true
           # optional: path to YAML configuration of the rules
           checkstyle-rules: submitted-changes/.github/checkstyle/checkstyle-rules.yaml
+          # optional: fail the action when violations are detected
+          checkstyle-fail: true
 ```
+
+If `checkstyle-fail` is set to `true`, the GitHub Action will exit with a non-zero status whenever checkstyle violations are detected, which ensures the workflow (and therefore the pull request) is blocked until the issues are fixed.
 
 The YAML file can be used to include or exclude specific rules and to configure rule parameters. For example:
 

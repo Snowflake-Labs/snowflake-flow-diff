@@ -15,7 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-java -jar /flow-diff.jar "$1" "$2" "$6" "$7" >> /github/workspace/diff.txt
+java -jar /flow-diff.jar "$1" "$2" "$6" "$7" "$8" >> /github/workspace/diff.txt
+FLOW_EXIT_CODE=$?
 
 OUTPUT=$(cat /github/workspace/diff.txt | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/\t/    /g' | sed ':a;N;$!ba;s/\n/\\n/g')
 
@@ -24,3 +25,10 @@ curl -X POST \
      -H "Accept: application/vnd.github+json" \
      https://api.github.com/repos/$4/issues/$5/comments \
      -d "{\"body\":\"$OUTPUT\"}"
+CURL_EXIT_CODE=$?
+
+if [ $FLOW_EXIT_CODE -ne 0 ]; then
+    exit $FLOW_EXIT_CODE
+fi
+
+exit $CURL_EXIT_CODE

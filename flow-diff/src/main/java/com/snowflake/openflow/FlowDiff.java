@@ -68,6 +68,11 @@ public class FlowDiff {
     private static List<String> checkstyleViolations;
 
     public static void main(String[] args) throws IOException {
+        final int exitCode = run(args);
+        System.exit(exitCode);
+    }
+
+    static int run(String[] args) throws IOException {
 
         final List<String> pathsA = List.of(args[0].split(",")).stream().map(String::trim).toList();
         final List<String> pathsB = List.of(args[1].split(",")).stream().map(String::trim).toList();
@@ -76,6 +81,9 @@ public class FlowDiff {
         final CheckstyleRulesConfig rulesConfig = args.length > 3 && args[3] != null && !args[3].isEmpty()
                 ? CheckstyleRulesConfig.fromFile(args[3])
                 : null;
+        final boolean failOnCheckstyleViolations = args.length > 4 && args[4] != null && !args[4].isEmpty()
+                ? Boolean.parseBoolean(args[4])
+                : false;
 
         System.out.println("> [!NOTE]");
         System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
@@ -83,10 +91,12 @@ public class FlowDiff {
 
         if (pathsA.size() != pathsB.size()) {
             System.out.println("The action didn't properly identify the files to compare. Please check the input files.");
-            return;
+            return 1;
         } else {
             System.out.println("Identified " + pathsA.size() + " changed flows in this Pull Request.");
         }
+
+        boolean hasBlockingCheckstyleViolations = false;
 
         for (int i = 0; i < pathsA.size(); i++) {
 
@@ -96,15 +106,23 @@ public class FlowDiff {
             parameterContexts = new HashMap<>();
             processGroups = new HashMap<>();
 
-            executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
+            final boolean flowHasCheckstyleViolations = executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
+            hasBlockingCheckstyleViolations = hasBlockingCheckstyleViolations || flowHasCheckstyleViolations;
         }
 
+        if (checkstyleEnabled && failOnCheckstyleViolations && hasBlockingCheckstyleViolations) {
+            System.err.println("Checkstyle violations detected and `checkstyle-fail` is enabled.");
+            return 2;
+        }
+
+        return 0;
     }
 
-    private static void executeFlowDiffForOneFlow(final String pathA, final String pathB,
+    private static boolean executeFlowDiffForOneFlow(final String pathA, final String pathB,
             final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
         final Set<FlowDifference> diffs = getDiff(pathA, pathB, checkstyleEnabled, rulesConfig);
         final Set<String> bundleChanges = new HashSet<>();
+        boolean flowHasCheckstyleViolations = false;
 
         System.out.println("### Executing Snowflake Flow Diff for flow: " + flowName);
 
@@ -115,6 +133,7 @@ public class FlowDiff {
                 System.out.println("> - " + violation);
             }
             System.out.println("");
+            flowHasCheckstyleViolations = true;
         } else if (checkstyleEnabled && (checkstyleViolations == null || checkstyleViolations.isEmpty())) {
             System.out.println("#### No Checkstyle Violations found");
         }
@@ -474,6 +493,8 @@ public class FlowDiff {
         } else {
             System.out.println("#### No relevant changes found in the flow");
         }
+
+        return flowHasCheckstyleViolations;
     }
 
     public static Set<FlowDifference> getDiff(final String pathA, final String pathB,

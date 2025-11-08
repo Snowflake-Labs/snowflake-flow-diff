@@ -108,7 +108,19 @@ class FlowDiffTest {
 
     @Test
     void testMain() throws IOException {
-        FlowDiff.main(new String[] { "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
+        final int exitCode = FlowDiff.run(new String[] { "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
                 "src/test/resources/flow_v4_parameters.json,src/test/resources/flow_v6_parameter_value.json", "true" });
+        assertEquals(0, exitCode);
+    }
+
+    @Test
+    void testCheckstyleFailExitCode() throws IOException {
+        final int exitCode = FlowDiff.run(new String[] {
+                "src/test/resources/flow_v6_parameter_value.json",
+                "src/test/resources/flow_v6_parameter_value.json",
+                "true",
+                "src/test/resources/checkstyle_limit1.yaml",
+                "true" });
+        assertEquals(2, exitCode);
     }
 }

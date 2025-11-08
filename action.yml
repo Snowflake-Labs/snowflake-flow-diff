@@ -45,6 +45,10 @@ inputs:
   checkstyle-rules:
     description: 'Path to optional YAML file configuring checkstyle rules'
     required: false
+  checkstyle-fail:
+    description: 'Fail the action when checkstyle violations are found'
+    required: false
+    default: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -56,3 +60,4 @@ runs:
     - ${{ inputs.issuenumber }}
     - ${{ inputs.checkstyle }}
     - ${{ inputs.checkstyle-rules }}
+    - ${{ inputs.checkstyle-fail }}
