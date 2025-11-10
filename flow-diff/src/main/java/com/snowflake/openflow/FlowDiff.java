@@ -62,6 +62,10 @@ import java.util.function.Function;
 
 public class FlowDiff {
 
+    private static final int RETURN_SUCCESS = 0;
+    private static final int RETURN_FAILURE = 1;
+    private static final int RETURN_CHECKSTYLE_VIOLATIONS = 2;
+
     private static String flowName;
     private static Map<String, VersionedParameterContext> parameterContexts;
     private static Map<String, VersionedProcessGroup> processGroups;
@@ -91,7 +95,7 @@ public class FlowDiff {
 
         if (pathsA.size() != pathsB.size()) {
             System.out.println("The action didn't properly identify the files to compare. Please check the input files.");
-            return 1;
+            return RETURN_FAILURE;
         } else {
             System.out.println("Identified " + pathsA.size() + " changed flows in this Pull Request.");
         }
@@ -99,7 +103,6 @@ public class FlowDiff {
         boolean hasBlockingCheckstyleViolations = false;
 
         for (int i = 0; i < pathsA.size(); i++) {
-
             System.out.println("");
 
             flowName = "";
@@ -111,11 +114,10 @@ public class FlowDiff {
         }
 
         if (checkstyleEnabled && failOnCheckstyleViolations && hasBlockingCheckstyleViolations) {
-            System.err.println("Checkstyle violations detected and `checkstyle-fail` is enabled.");
-            return 2;
+            return RETURN_CHECKSTYLE_VIOLATIONS;
         }
 
-        return 0;
+        return RETURN_SUCCESS;
     }
 
     private static boolean executeFlowDiffForOneFlow(final String pathA, final String pathB,
