@@ -44,10 +44,13 @@ public class NoSelfLoopRule implements CheckstyleRule {
         for (final VersionedConnection connection : processGroup.getConnections()) {
             if (connection.getSource().getId().equals(connection.getDestination().getId())) {
                 final ConnectableComponent component = connection.getSource();
+                if (ruleConfig != null && ruleConfig.isComponentExcluded(flowName, component.getId())) {
+                    continue;
+                }
                 final String violation = String.format("Component named `%s` of type `%s` has a self-loop connection for relationship(s) `%s`. "
-                        + "The recommended approach is to use the framework-level retry mechanism to avoid scenarios where FlowFiles would stay"
-                        + " in the connection forever and to have proper backoff mechanism.",
-                        component.getName(), component.getType().name(), connection.getSelectedRelationships().toString());
+                                + "The recommended approach is to use the framework-level retry mechanism to avoid scenarios where FlowFiles would stay"
+                                + " in the connection forever and to have proper backoff mechanism. Component id: `%s`.",
+                        component.getName(), component.getType().name(), connection.getSelectedRelationships().toString(), component.getId());
                 violations.add(violation);
             }
         }

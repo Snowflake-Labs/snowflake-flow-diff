@@ -61,7 +61,10 @@ public class ConcurrentTasksRule implements CheckstyleRule {
         for (final VersionedProcessor processor : processGroup.getProcessors()) {
             final int concurrentTasks = processor.getConcurrentlySchedulableTaskCount();
             if (concurrentTasks > limit) {
-                violations.add("Processor named `" + processor.getName() + "` is configured with " + concurrentTasks + " concurrent tasks");
+                if (ruleConfig != null && ruleConfig.isComponentExcluded(flowName, processor.getIdentifier())) {
+                    continue;
+                }
+                violations.add("Processor named `" + processor.getName() + "` (id: `" + processor.getIdentifier() + "`) is configured with " + concurrentTasks + " concurrent tasks");
             }
         }
 

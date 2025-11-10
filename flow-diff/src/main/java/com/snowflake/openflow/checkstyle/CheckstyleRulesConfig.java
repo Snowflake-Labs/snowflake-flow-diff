@@ -43,6 +43,22 @@ public record CheckstyleRulesConfig(
     public record RuleConfig(
             Map<String, Object> parameters,
             Map<String, Map<String, Object>> overrides,
-            List<String> exclude) {
+            List<String> exclude,
+            Map<String, List<String>> componentExclusions) {
+
+        public boolean isComponentExcluded(final String flowName, final String componentId) {
+            if (componentId == null || componentExclusions == null || componentExclusions.isEmpty()) {
+                return false;
+            }
+
+            if (flowName == null || flowName.isEmpty()) {
+                return componentExclusions.containsKey(".*") && componentExclusions.get(".*") != null
+                        && componentExclusions.get(".*").contains(componentId);
+            }
+
+            return componentExclusions.entrySet().stream()
+                    .filter(entry -> entry.getKey() != null && flowName.matches(entry.getKey()))
+                    .anyMatch(entry -> entry.getValue() != null && entry.getValue().contains(componentId));
+        }
     }
 }
