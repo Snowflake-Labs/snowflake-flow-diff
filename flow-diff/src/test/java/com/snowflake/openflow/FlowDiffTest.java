@@ -108,16 +108,22 @@ class FlowDiffTest {
 
     @Test
     void testMain() throws IOException {
-        final int exitCode = FlowDiff.run(new String[] { "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
-                "src/test/resources/flow_v4_parameters.json,src/test/resources/flow_v6_parameter_value.json", "true" });
+        // Arguments: flowA, flowB, token, repository, issuenumber, checkstyle, checkstyle-rules, checkstyle-fail
+        final int exitCode = FlowDiff.run(new String[] {
+                "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
+                "src/test/resources/flow_v4_parameters.json,src/test/resources/flow_v6_parameter_value.json",
+                "", "", "",  // no GitHub API
+                "true" });
         assertEquals(0, exitCode);
     }
 
     @Test
     void testCheckstyleFailExitCode() throws IOException {
+        // Arguments: flowA, flowB, token, repository, issuenumber, checkstyle, checkstyle-rules, checkstyle-fail
         final int exitCode = FlowDiff.run(new String[] {
                 "src/test/resources/flow_v6_parameter_value.json",
                 "src/test/resources/flow_v6_parameter_value.json",
+                "", "", "",  // no GitHub API
                 "true",
                 "src/test/resources/checkstyle_limit1.yaml",
                 "true" });

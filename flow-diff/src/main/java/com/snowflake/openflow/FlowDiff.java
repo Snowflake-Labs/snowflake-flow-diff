@@ -45,8 +45,15 @@ import org.apache.nifi.registry.flow.diff.FlowDifference;
 import org.apache.nifi.registry.flow.diff.StandardComparableDataFlow;
 import org.apache.nifi.registry.flow.diff.StandardFlowComparator;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -66,6 +73,9 @@ public class FlowDiff {
     private static final int RETURN_FAILURE = 1;
     private static final int RETURN_CHECKSTYLE_VIOLATIONS = 2;
 
+    // Text that uniquely identifies comments from this action (used to find and delete previous comments)
+    private static final String ACTION_IDENTIFIER = "This GitHub Action is created and maintained by [Snowflake]";
+
     private static String flowName;
     private static Map<String, VersionedParameterContext> parameterContexts;
     private static Map<String, VersionedProcessGroup> processGroups;
@@ -77,47 +87,187 @@ public class FlowDiff {
     }
 
     static int run(String[] args) throws IOException {
+        // Arguments match the order from action.yml:
+        // args[0] = flowA
+        // args[1] = flowB
+        // args[2] = token
+        // args[3] = repository
+        // args[4] = issuenumber
+        // args[5] = checkstyle
+        // args[6] = checkstyle-rules
+        // args[7] = checkstyle-fail
 
         final List<String> pathsA = List.of(args[0].split(",")).stream().map(String::trim).toList();
         final List<String> pathsB = List.of(args[1].split(",")).stream().map(String::trim).toList();
 
-        final boolean checkstyleEnabled = Boolean.parseBoolean(args[2]);
-        final CheckstyleRulesConfig rulesConfig = args.length > 3 && args[3] != null && !args[3].isEmpty()
-                ? CheckstyleRulesConfig.fromFile(args[3])
+        // GitHub API parameters (optional - if not provided, output goes to stdout only)
+        final String githubToken = args.length > 2 && args[2] != null && !args[2].isEmpty() ? args[2] : null;
+        final String githubRepository = args.length > 3 && args[3] != null && !args[3].isEmpty() ? args[3] : null;
+        final String githubIssueNumber = args.length > 4 && args[4] != null && !args[4].isEmpty() ? args[4] : null;
+
+        final boolean checkstyleEnabled = args.length > 5 && args[5] != null && !args[5].isEmpty()
+                ? Boolean.parseBoolean(args[5])
+                : false;
+        final CheckstyleRulesConfig rulesConfig = args.length > 6 && args[6] != null && !args[6].isEmpty()
+                ? CheckstyleRulesConfig.fromFile(args[6])
                 : null;
-        final boolean failOnCheckstyleViolations = args.length > 4 && args[4] != null && !args[4].isEmpty()
-                ? Boolean.parseBoolean(args[4])
+        final boolean failOnCheckstyleViolations = args.length > 7 && args[7] != null && !args[7].isEmpty()
+                ? Boolean.parseBoolean(args[7])
                 : false;
 
-        System.out.println("> [!NOTE]");
-        System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
-        System.out.println("");
+        // Capture output to a string if we need to post to GitHub
+        final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
+        final PrintStream originalOut = System.out;
+        final PrintStream captureStream = new PrintStream(outputCapture, true, StandardCharsets.UTF_8);
 
-        if (pathsA.size() != pathsB.size()) {
-            System.out.println("The action didn't properly identify the files to compare. Please check the input files.");
-            return RETURN_FAILURE;
-        } else {
-            System.out.println("Identified " + pathsA.size() + " changed flows in this Pull Request.");
+        if (githubToken != null && githubRepository != null && githubIssueNumber != null) {
+            System.setOut(captureStream);
         }
 
-        boolean hasBlockingCheckstyleViolations = false;
-
-        for (int i = 0; i < pathsA.size(); i++) {
+        try {
+            System.out.println("> [!NOTE]");
+            System.out.println("> This GitHub Action is created and maintained by [Snowflake](https://www.snowflake.com/).");
             System.out.println("");
 
-            flowName = "";
-            parameterContexts = new HashMap<>();
-            processGroups = new HashMap<>();
+            if (pathsA.size() != pathsB.size()) {
+                System.out.println("The action didn't properly identify the files to compare. Please check the input files.");
+                return RETURN_FAILURE;
+            } else {
+                System.out.println("Identified " + pathsA.size() + " changed flows in this Pull Request.");
+            }
 
-            final boolean flowHasCheckstyleViolations = executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
-            hasBlockingCheckstyleViolations = hasBlockingCheckstyleViolations || flowHasCheckstyleViolations;
+            boolean hasBlockingCheckstyleViolations = false;
+
+            for (int i = 0; i < pathsA.size(); i++) {
+                System.out.println("");
+
+                flowName = "";
+                parameterContexts = new HashMap<>();
+                processGroups = new HashMap<>();
+
+                final boolean flowHasCheckstyleViolations = executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
+                hasBlockingCheckstyleViolations = hasBlockingCheckstyleViolations || flowHasCheckstyleViolations;
+            }
+
+            // Post to GitHub if credentials are provided
+            if (githubToken != null && githubRepository != null && githubIssueNumber != null) {
+                System.setOut(originalOut);
+                final String output = outputCapture.toString(StandardCharsets.UTF_8);
+
+                // Also print to stdout for logging
+                System.out.println(output);
+
+                // Delete previous comments and post new one
+                deletePreviousComments(githubToken, githubRepository, githubIssueNumber);
+                postComment(githubToken, githubRepository, githubIssueNumber, output);
+            }
+
+            if (checkstyleEnabled && failOnCheckstyleViolations && hasBlockingCheckstyleViolations) {
+                return RETURN_CHECKSTYLE_VIOLATIONS;
+            }
+
+            return RETURN_SUCCESS;
+        } finally {
+            System.setOut(originalOut);
         }
+    }
 
-        if (checkstyleEnabled && failOnCheckstyleViolations && hasBlockingCheckstyleViolations) {
-            return RETURN_CHECKSTYLE_VIOLATIONS;
+    /**
+     * Deletes previous comments from this action on the PR.
+     */
+    private static void deletePreviousComments(String token, String repository, String issueNumber) {
+        try {
+            final HttpClient client = HttpClient.newHttpClient();
+            final String apiUrl = "https://api.github.com/repos/" + repository + "/issues/" + issueNumber + "/comments?per_page=100";
+
+            final HttpRequest listRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl))
+                    .header("Authorization", "Token " + token)
+                    .header("Accept", "application/vnd.github+json")
+                    .GET()
+                    .build();
+
+            final HttpResponse<String> response = client.send(listRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                // Parse the JSON array to find comments with our identifier
+                final ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                final List<Map<String, Object>> comments = mapper.readValue(response.body(),
+                        mapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+
+                for (Map<String, Object> comment : comments) {
+                    final String body = (String) comment.get("body");
+                    if (body != null && body.contains(ACTION_IDENTIFIER)) {
+                        final Number commentId = (Number) comment.get("id");
+                        deleteComment(client, token, repository, commentId.longValue());
+                    }
+                }
+            } else {
+                System.err.println("Failed to list comments: HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting previous comments: " + e.getMessage());
         }
+    }
 
-        return RETURN_SUCCESS;
+    /**
+     * Deletes a specific comment by ID.
+     */
+    private static void deleteComment(HttpClient client, String token, String repository, long commentId) {
+        try {
+            final String deleteUrl = "https://api.github.com/repos/" + repository + "/issues/comments/" + commentId;
+
+            final HttpRequest deleteRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(deleteUrl))
+                    .header("Authorization", "Token " + token)
+                    .header("Accept", "application/vnd.github+json")
+                    .DELETE()
+                    .build();
+
+            final HttpResponse<String> response = client.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 204) {
+                System.out.println("Deleted previous comment ID: " + commentId);
+            } else {
+                System.err.println("Failed to delete comment " + commentId + ": HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting comment " + commentId + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Posts a new comment to the PR.
+     */
+    private static void postComment(String token, String repository, String issueNumber, String body) {
+        try {
+            final HttpClient client = HttpClient.newHttpClient();
+            final String apiUrl = "https://api.github.com/repos/" + repository + "/issues/" + issueNumber + "/comments";
+
+            // Escape the body for JSON
+            final ObjectMapper mapper = new ObjectMapper();
+            final String jsonBody = mapper.writeValueAsString(Map.of("body", body));
+
+            final HttpRequest postRequest = HttpRequest.newBuilder()
+                    .uri(URI.create(apiUrl))
+                    .header("Authorization", "Token " + token)
+                    .header("Accept", "application/vnd.github+json")
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            final HttpResponse<String> response = client.send(postRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 201) {
+                System.out.println("Successfully posted comment to PR");
+            } else {
+                System.err.println("Failed to post comment: HTTP " + response.statusCode());
+                System.err.println(response.body());
+            }
+        } catch (Exception e) {
+            System.err.println("Error posting comment: " + e.getMessage());
+        }
     }
 
     private static boolean executeFlowDiffForOneFlow(final String pathA, final String pathB,
