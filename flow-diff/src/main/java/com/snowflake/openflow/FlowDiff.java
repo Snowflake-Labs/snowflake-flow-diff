@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -567,6 +568,11 @@ public class FlowDiff {
         }
         final FlowSnapshotContainer snapshotB = getFlowContainer(pathB, factory);
 
+        if (snapshotA != null) {
+            sanitizeProcessGroup(snapshotA.getFlowSnapshot().getFlowContents());
+        }
+        sanitizeProcessGroup(snapshotB.getFlowSnapshot().getFlowContents());
+
         processGroups = new HashMap<>();
         VersionedProcessGroup rootPG = snapshotB.getFlowSnapshot().getFlowContents();
         processGroups.put(rootPG.getIdentifier(), rootPG);
@@ -643,6 +649,36 @@ public class FlowDiff {
         for (VersionedProcessGroup pg : childPGs) {
             processGroups.put(pg.getIdentifier(), pg);
             registerProcessGroups(pg);
+        }
+    }
+
+    private static void sanitizeProcessGroup(final VersionedProcessGroup group) {
+        if (group == null) {
+            return;
+        }
+        if (group.getProcessors() != null) {
+            for (final VersionedProcessor processor : group.getProcessors()) {
+                sanitizeConfigurableExtension(processor);
+            }
+        }
+        if (group.getControllerServices() != null) {
+            for (final VersionedControllerService service : group.getControllerServices()) {
+                sanitizeConfigurableExtension(service);
+            }
+        }
+        if (group.getProcessGroups() != null) {
+            for (final VersionedProcessGroup child : group.getProcessGroups()) {
+                sanitizeProcessGroup(child);
+            }
+        }
+    }
+
+    private static void sanitizeConfigurableExtension(final VersionedConfigurableExtension extension) {
+        if (extension.getProperties() == null) {
+            extension.setProperties(new LinkedHashMap<>());
+        }
+        if (extension.getPropertyDescriptors() == null) {
+            extension.setPropertyDescriptors(new LinkedHashMap<>());
         }
     }
 
