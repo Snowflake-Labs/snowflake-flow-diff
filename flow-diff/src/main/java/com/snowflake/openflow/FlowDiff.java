@@ -211,7 +211,7 @@ public class FlowDiff {
                     } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONTROLLER_SERVICE)) {
                         final VersionedControllerService cs = (VersionedControllerService) diff.getComponentB();
                         final VersionedProcessGroup csPg = processGroups.get(cs.getGroupIdentifier());
-                        final String pgName = csPg != null ? csPg.getName() : cs.getGroupIdentifier();
+                        final String pgName = csPg == null ? cs.getGroupIdentifier() : csPg.getName();
                         System.out.println("- A " + printComponent(diff.getComponentB())
                                 + " has been added in Process Group `" + pgName + "` with the below properties:");
                         printConfigurableExtensionProperties(cs);
