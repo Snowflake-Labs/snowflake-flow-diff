@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM maven:3.9.9-eclipse-temurin-21 as builder
+FROM maven:3.9.12-eclipse-temurin-21 as builder
 
 COPY flow-diff /flow-diff
 RUN mvn -f /flow-diff/pom.xml clean package
