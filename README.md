@@ -72,6 +72,20 @@ jobs:
 
 Note - you may want to change `grep  '\.json$'` with a more specific pattern to match your specific requirements.
 
+## GitHub Enterprise Server
+
+This action works with GitHub Enterprise Server (GHE) out of the box. The GitHub API URL is automatically detected via `github.api_url`. If you need to override it for any reason, you can explicitly set the `api-url` input:
+
+```yaml
+      - name: Snowflake Flow Diff
+        uses: snowflake-labs/snowflake-flow-diff@v0
+        id: flowdiff
+        with:
+          flowA: ${{ steps.files.outputs.flowA }}
+          flowB: ${{ steps.files.outputs.flowB }}
+          api-url: https://github.example.com/api/v3
+```
+
 ## Checkstyle
 
 Optionally, it is possible to enable a checkstyle check on the new version of the flow. If some violations against NiFi best practices are found, a message will be added to the comment published on the pull request.
