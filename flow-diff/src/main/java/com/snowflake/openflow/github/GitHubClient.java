@@ -40,19 +40,27 @@ public class GitHubClient {
     // GitHub Actions bot username
     private static final String GITHUB_ACTIONS_BOT = "github-actions[bot]";
 
+    private static final String DEFAULT_API_URL = "https://api.github.com";
+
     private final String token;
     private final String repository;
     private final String issueNumber;
+    private final String apiBaseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public GitHubClient(String token, String repository, String issueNumber) {
+    public GitHubClient(final String token, final String repository, final String issueNumber, final String apiBaseUrl) {
         this.token = token;
         this.repository = repository;
         this.issueNumber = issueNumber;
+        this.apiBaseUrl = apiBaseUrl != null && !apiBaseUrl.isEmpty() ? stripTrailingSlash(apiBaseUrl) : DEFAULT_API_URL;
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    private static String stripTrailingSlash(final String url) {
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
     /**
@@ -63,14 +71,14 @@ public class GitHubClient {
      */
     public boolean postComment(String body) {
         try {
-            final String apiUrl = "https://api.github.com/repos/" + repository + "/issues/" + issueNumber + "/comments";
+            final String apiUrl = "%s/repos/%s/issues/%s/comments".formatted(apiBaseUrl, repository, issueNumber);
 
             // Escape the body for JSON
             final String jsonBody = objectMapper.writeValueAsString(Map.of("body", body));
 
             final HttpRequest postRequest = HttpRequest.newBuilder()
                     .uri(URI.create(apiUrl))
-                    .header("Authorization", "Token " + token)
+                    .header("Authorization", "Token %s".formatted(token))
                     .header("Accept", "application/vnd.github+json")
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -82,12 +90,12 @@ public class GitHubClient {
                 System.out.println("Successfully posted comment to PR");
                 return true;
             } else {
-                System.err.println("Failed to post comment: HTTP " + response.statusCode());
+                System.err.println("Failed to post comment: HTTP %d".formatted(response.statusCode()));
                 System.err.println(response.body());
                 return false;
             }
         } catch (Exception e) {
-            System.err.println("Error posting comment: " + e.getMessage());
+            System.err.println("Error posting comment: %s".formatted(e.getMessage()));
             return false;
         }
     }
@@ -102,12 +110,12 @@ public class GitHubClient {
         try {
             // Collect all matching comment IDs across all pages
             final List<Long> matchingIds = new ArrayList<>();
-            String nextUrl = "https://api.github.com/repos/" + repository + "/issues/" + issueNumber + "/comments?per_page=100";
+            String nextUrl = "%s/repos/%s/issues/%s/comments?per_page=100".formatted(apiBaseUrl, repository, issueNumber);
 
             while (nextUrl != null) {
                 final HttpRequest listRequest = HttpRequest.newBuilder()
                         .uri(URI.create(nextUrl))
-                        .header("Authorization", "Token " + token)
+                    .header("Authorization", "Token %s".formatted(token))
                         .header("Accept", "application/vnd.github+json")
                         .GET()
                         .build();
@@ -115,7 +123,7 @@ public class GitHubClient {
                 final HttpResponse<String> response = httpClient.send(listRequest, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() != 200) {
-                    System.err.println("Failed to list comments: HTTP " + response.statusCode());
+                    System.err.println("Failed to list comments: HTTP %d".formatted(response.statusCode()));
                     break;
                 }
 
@@ -150,7 +158,7 @@ public class GitHubClient {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error deleting previous comments: " + e.getMessage());
+            System.err.println("Error deleting previous comments: %s".formatted(e.getMessage()));
         }
     }
 
@@ -187,11 +195,11 @@ public class GitHubClient {
      */
     private void deleteComment(long commentId) {
         try {
-            final String deleteUrl = "https://api.github.com/repos/" + repository + "/issues/comments/" + commentId;
+            final String deleteUrl = "%s/repos/%s/issues/comments/%d".formatted(apiBaseUrl, repository, commentId);
 
             final HttpRequest deleteRequest = HttpRequest.newBuilder()
                     .uri(URI.create(deleteUrl))
-                    .header("Authorization", "Token " + token)
+                    .header("Authorization", "Token %s".formatted(token))
                     .header("Accept", "application/vnd.github+json")
                     .DELETE()
                     .build();
@@ -199,12 +207,12 @@ public class GitHubClient {
             final HttpResponse<String> response = httpClient.send(deleteRequest, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 204) {
-                System.out.println("Deleted previous comment ID: " + commentId);
+                System.out.println("Deleted previous comment ID: %d".formatted(commentId));
             } else {
-                System.err.println("Failed to delete comment " + commentId + ": HTTP " + response.statusCode());
+                System.err.println("Failed to delete comment %d: HTTP %d".formatted(commentId, response.statusCode()));
             }
         } catch (Exception e) {
-            System.err.println("Error deleting comment " + commentId + ": " + e.getMessage());
+            System.err.println("Error deleting comment %d: %s".formatted(commentId, e.getMessage()));
         }
     }
 }

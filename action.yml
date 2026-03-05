@@ -49,6 +49,10 @@ inputs:
     description: 'Fail the action when checkstyle violations are found'
     required: false
     default: false
+  api-url:
+    description: 'GitHub API URL (automatically set for GitHub Enterprise Server)'
+    required: false
+    default: ${{ github.api_url }}
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -61,3 +65,4 @@ runs:
     - ${{ inputs.checkstyle }}
     - ${{ inputs.checkstyle-rules }}
     - ${{ inputs.checkstyle-fail }}
+    - ${{ inputs.api-url }}

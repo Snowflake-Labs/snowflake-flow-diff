@@ -91,6 +91,7 @@ public class FlowDiff {
         // args[5] = checkstyle
         // args[6] = checkstyle-rules
         // args[7] = checkstyle-fail
+        // args[8] = api-url
 
         final List<String> pathsA = List.of(args[0].split(",")).stream().map(String::trim).toList();
         final List<String> pathsB = List.of(args[1].split(",")).stream().map(String::trim).toList();
@@ -109,6 +110,7 @@ public class FlowDiff {
         final boolean failOnCheckstyleViolations = args.length > 7 && args[7] != null && !args[7].isEmpty()
                 ? Boolean.parseBoolean(args[7])
                 : false;
+        final String githubApiUrl = args.length > 8 && args[8] != null && !args[8].isEmpty() ? args[8] : null;
 
         // Capture output to a string if we need to post to GitHub
         final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
@@ -153,7 +155,7 @@ public class FlowDiff {
                 System.out.println(output);
 
                 // Post the new comment first, then delete old ones (safer: if posting fails, old comments remain)
-                final GitHubClient gitHubClient = new GitHubClient(githubToken, githubRepository, githubIssueNumber);
+                final GitHubClient gitHubClient = new GitHubClient(githubToken, githubRepository, githubIssueNumber, githubApiUrl);
                 final boolean postSuccess = gitHubClient.postComment(output);
                 if (postSuccess) {
                     gitHubClient.deletePreviousComments();

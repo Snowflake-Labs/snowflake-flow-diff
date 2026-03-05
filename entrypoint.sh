@@ -16,5 +16,5 @@
 # limitations under the License.
 
 # Arguments are passed directly from action.yml in order:
-# flowA, flowB, token, repository, issuenumber, checkstyle, checkstyle-rules, checkstyle-fail
+# flowA, flowB, token, repository, issuenumber, checkstyle, checkstyle-rules, checkstyle-fail, api-url
 java -jar /flow-diff.jar "$@"
