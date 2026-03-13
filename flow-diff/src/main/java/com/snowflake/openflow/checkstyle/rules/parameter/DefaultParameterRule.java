@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Snowflake Inc.
+ * Copyright 2026 Snowflake Inc.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.snowflake.openflow.checkstyle.rules;
+package com.snowflake.openflow.checkstyle.rules.parameter;
 
 import com.snowflake.openflow.checkstyle.CheckstyleRule;
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;

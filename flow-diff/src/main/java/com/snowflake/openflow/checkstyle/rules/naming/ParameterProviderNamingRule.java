@@ -1,0 +1,56 @@
+/*
+ * Copyright 2026 Snowflake Inc.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.snowflake.openflow.checkstyle.rules.naming;
+
+import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
+import org.apache.nifi.flow.ParameterProviderReference;
+import org.apache.nifi.registry.flow.FlowSnapshotContainer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class ParameterProviderNamingRule extends AbstractNamingRule {
+
+    @Override
+    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
+        final Map<String, ParameterProviderReference> parameterProviders = container.getFlowSnapshot().getParameterProviders();
+        if (parameterProviders == null || parameterProviders.isEmpty()) {
+            return List.of();
+        }
+
+        final Map<String, Object> patternsMap = getPatterns(config, flowName);
+        final String defaultPattern = getDefaultPattern(config, flowName);
+
+        if (patternsMap == null && defaultPattern == null) {
+            return List.of();
+        }
+
+        final List<String> violations = new ArrayList<>();
+
+        for (final ParameterProviderReference provider : parameterProviders.values()) {
+            final String pattern = resolvePattern(provider.getType(), patternsMap, defaultPattern);
+
+            if (pattern != null && !provider.getName().matches(pattern)) {
+                violations.add("Parameter Provider of type `%s` named `%s` does not match the expected naming pattern `%s` (id: `%s`)".formatted(
+                        shortType(provider.getType()), provider.getName(), pattern, provider.getIdentifier()));
+            }
+        }
+
+        return violations;
+    }
+}

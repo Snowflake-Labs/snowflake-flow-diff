@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Snowflake Inc.
+ * Copyright 2026 Snowflake Inc.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -200,5 +200,131 @@ class FlowCheckstyleTest {
         final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
 
         assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testProcessorNamingViolations() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_processor_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("InvokeHTTP") && v.contains("does not match") && v.contains("proc-invoke-http-001")));
+    }
+
+    @Test
+    void testProcessorNamingNoViolationsWhenCompliant() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_processor_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertTrue(violations.stream().noneMatch(v -> v.contains("GENERATE_FLOW_FILE")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("UPDATE_ATTRIBUTE")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("CUSTOMER_SEL")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("CUSTOMER_ISTG")));
+    }
+
+    @Test
+    void testProcessorNamingDefaultPattern() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_processor_naming_default.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("InvokeHTTP") && v.contains("does not match")));
+    }
+
+    @Test
+    void testProcessorNamingComponentExclusion() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_naming_component_exclusions.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testProcessorNamingOverride() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_naming_overrides.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testControllerServiceNamingViolations() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_controller_service_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("Snowconnection_DEV") && v.contains("does not match") && v.contains("cs-dbcp-invalid-001")));
+    }
+
+    @Test
+    void testControllerServiceNamingValidNames() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_controller_service_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertTrue(violations.stream().noneMatch(v -> v.contains("acme_prod_mssql_mds")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("csv_record_writer")));
+    }
+
+    @Test
+    void testParameterContextNamingViolations() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_parameter_context_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("Test Parameter Context") && v.contains("does not match")));
+    }
+
+    @Test
+    void testParameterContextNamingExclude() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_parameter_context_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertTrue(violations.stream().noneMatch(v -> v.contains("common_parameter_context")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("acme_prod_postgres_rbs_inventorydb_secrets")));
+    }
+
+    @Test
+    void testParameterProviderNamingViolations() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_parameter_provider_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("Acme_Prod_Mssql_Secrets") && v.contains("does not match") && v.contains("pp-invalid-001")));
+    }
+
+    @Test
+    void testParameterProviderNamingValidNames() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_parameter_provider_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertTrue(violations.stream().noneMatch(v -> v.contains("acme_prod_mssql_landmark_secrets")));
+    }
+
+    @Test
+    void testNamingRulesNoViolationsWithoutConfig() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+
+        CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("processorNaming"), null, null);
+        assertEquals(0, FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config).size());
+
+        config = new CheckstyleRulesConfig(List.of("controllerServiceNaming"), null, null);
+        assertEquals(0, FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config).size());
+
+        config = new CheckstyleRulesConfig(List.of("parameterContextNaming"), null, null);
+        assertEquals(0, FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config).size());
+
+        config = new CheckstyleRulesConfig(List.of("parameterProviderNaming"), null, null);
+        assertEquals(0, FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config).size());
     }
 }

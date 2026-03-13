@@ -163,6 +163,10 @@ The following table summarizes what each rule reports and which identifiers you 
 | `noSelfLoop` | Component name/type and UUID | Processor/Funnel UUID at both ends of the self-loop |
 | `enforcePrioritizer` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
 | `backpressureThreshold` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
+| `processorNaming` | Processor name, type, and UUID | Processor UUID (`VersionedProcessor#getIdentifier`) |
+| `controllerServiceNaming` | Controller Service name, type, and UUID | Controller Service UUID (`VersionedControllerService#getIdentifier`) |
+| `parameterContextNaming` | Parameter Context name | _Not applicable_ |
+| `parameterProviderNaming` | Parameter Provider name, type, and UUID | _Not applicable_ |
 
 Available rules:
 - `concurrentTasks` to check the number of concurrent tasks and define an upper limit (parameter: `limit`, default value is 2)
@@ -173,6 +177,84 @@ Available rules:
 - `noSelfLoop` to check if there are self-loop connections in the flow
 - `enforcePrioritizer` to check if all connections in the flow are set with the configured list of prioritizers (parameter: `prioritizers`, comma-separated list of expected prioritizers, example: `org.apache.nifi.prioritizer.FirstInFirstOutPrioritizer`)
 - `backpressureThreshold` to ensure each connection keeps both data size and object count backpressure thresholds greater than zero
+- `processorNaming` to validate processor names against regex patterns based on processor type (parameters: `patterns` map of fully qualified type to regex, optional `defaultPattern` for types not in the map). This rule produces no violations when no patterns are configured.
+- `controllerServiceNaming` to validate controller service names against regex patterns based on service type (parameters: `patterns` map of fully qualified type to regex, optional `defaultPattern` for types not in the map). This rule produces no violations when no patterns are configured.
+- `parameterContextNaming` to validate parameter context names against a regex pattern (parameters: `defaultPattern` regex, optional `exclude` list of exact names to skip). This rule produces no violations when no pattern is configured.
+- `parameterProviderNaming` to validate parameter provider names against regex patterns based on provider type (parameters: `patterns` map of fully qualified type to regex, optional `defaultPattern` for types not in the map). This rule produces no violations when no patterns are configured.
+
+### Naming convention rules
+
+The naming rules (`processorNaming`, `controllerServiceNaming`, `parameterContextNaming`, `parameterProviderNaming`) allow you to enforce custom naming conventions on NiFi components. They are no-ops without configuration, so they are safe to include without side effects.
+
+#### Processor naming
+
+Validate processor names by type. Use `patterns` to map fully qualified processor types to regex patterns, and `defaultPattern` as a fallback for types not explicitly listed:
+
+```yaml
+include:
+  - processorNaming
+rules:
+  processorNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.processors.snowflake.PutSnowflakeInternalStage: ".*_ISTG$"
+        org.apache.nifi.processors.standard.ExecuteSQLRecord: ".*_(SEL|COPY|UPD_SEL|UPD_INS|EXT)$|^SP_.*"
+        org.apache.nifi.processors.standard.GenerateFlowFile: "^GENERATE_FLOW_FILE$"
+        org.apache.nifi.processors.standard.UpdateAttribute: "^UPDATE_ATTRIBUTE$"
+        org.apache.nifi.processors.standard.InvokeHTTP: ".*_EXT$"
+      defaultPattern: "^[A-Z][A-Z0-9_]+$"
+    componentExclusions:
+      "ProductionFlow.*":
+        - "some-processor-uuid-to-ignore"
+```
+
+#### Controller service naming
+
+Validate controller service names by type. Works the same as processor naming:
+
+```yaml
+include:
+  - controllerServiceNaming
+rules:
+  controllerServiceNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.dbcp.DBCPConnectionPool: "^acme_(dev|preprod|prod)_[a-z0-9_]+$"
+      defaultPattern: "^[a-z][a-z0-9_]+$"
+```
+
+#### Parameter context naming
+
+Validate parameter context names against a single pattern. Use `exclude` to skip specific context names:
+
+```yaml
+include:
+  - parameterContextNaming
+rules:
+  parameterContextNaming:
+    parameters:
+      defaultPattern: "^acme_(dev|preprod|prod)_[a-z0-9_]+_(secrets|config)$"
+      exclude:
+        - "common_parameter_context"
+        - "common_sftp_serverkey"
+        - "CommonDatabaseDriversReference"
+```
+
+#### Parameter provider naming
+
+Validate parameter provider (management controller service) names by type:
+
+```yaml
+include:
+  - parameterProviderNaming
+rules:
+  parameterProviderNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.parameter.aws.AwsSecretsManagerParameterProvider: "^acme_(dev|preprod|prod)_[a-z0-9_]+_secrets$"
+```
+
+All naming rules support the standard `overrides` mechanism to apply different patterns per flow name, and `componentExclusions` to silence violations for specific component UUIDs (where applicable).
 
 ## Example
 
