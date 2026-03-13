@@ -1,0 +1,385 @@
+{
+  "externalControllerServices" : { },
+  "flow" : {
+    "createdTimestamp" : 1726000168945,
+    "description" : "naming test",
+    "identifier" : "naming-test",
+    "lastModifiedTimestamp" : 1726000168945,
+    "name" : "naming-test",
+    "versionCount" : 0
+  },
+  "flowContents" : {
+    "comments" : "",
+    "componentType" : "PROCESS_GROUP",
+    "connections" : [ {
+      "backPressureDataSizeThreshold" : "1 GB",
+      "backPressureObjectThreshold" : 10000,
+      "bends" : [ ],
+      "componentType" : "CONNECTION",
+      "destination" : {
+        "comments" : "",
+        "groupId" : "flow-contents-group",
+        "id" : "proc-update-attr-001",
+        "name" : "UPDATE_ATTRIBUTE",
+        "type" : "PROCESSOR"
+      },
+      "flowFileExpiration" : "0 sec",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "conn-001",
+      "labelIndex" : 0,
+      "loadBalanceCompression" : "DO_NOT_COMPRESS",
+      "loadBalanceStrategy" : "DO_NOT_LOAD_BALANCE",
+      "name" : "",
+      "partitioningAttribute" : "",
+      "prioritizers" : [ ],
+      "selectedRelationships" : [ "success" ],
+      "source" : {
+        "comments" : "",
+        "groupId" : "flow-contents-group",
+        "id" : "proc-gen-ff-001",
+        "name" : "GENERATE_FLOW_FILE",
+        "type" : "PROCESSOR"
+      },
+      "zIndex" : 0
+    }, {
+      "backPressureDataSizeThreshold" : "1 GB",
+      "backPressureObjectThreshold" : 10000,
+      "bends" : [ ],
+      "componentType" : "CONNECTION",
+      "destination" : {
+        "comments" : "",
+        "groupId" : "flow-contents-group",
+        "id" : "proc-invoke-http-001",
+        "name" : "InvokeHTTP",
+        "type" : "PROCESSOR"
+      },
+      "flowFileExpiration" : "0 sec",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "conn-002",
+      "labelIndex" : 0,
+      "loadBalanceCompression" : "DO_NOT_COMPRESS",
+      "loadBalanceStrategy" : "DO_NOT_LOAD_BALANCE",
+      "name" : "",
+      "partitioningAttribute" : "",
+      "prioritizers" : [ ],
+      "selectedRelationships" : [ "success" ],
+      "source" : {
+        "comments" : "",
+        "groupId" : "flow-contents-group",
+        "id" : "proc-update-attr-001",
+        "name" : "UPDATE_ATTRIBUTE",
+        "type" : "PROCESSOR"
+      },
+      "zIndex" : 0
+    } ],
+    "controllerServices" : [ {
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-dbcp-service-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "CONTROLLER_SERVICE",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "cs-dbcp-valid-001",
+      "name" : "acme_prod_mssql_mds",
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "scheduledState" : "ENABLED",
+      "type" : "org.apache.nifi.dbcp.DBCPConnectionPool"
+    }, {
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-dbcp-service-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "CONTROLLER_SERVICE",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "cs-dbcp-invalid-001",
+      "name" : "Snowconnection_DEV",
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "scheduledState" : "ENABLED",
+      "type" : "org.apache.nifi.dbcp.DBCPConnectionPool"
+    }, {
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-record-serialization-services-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "CONTROLLER_SERVICE",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "cs-csv-writer-001",
+      "name" : "csv_record_writer",
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "scheduledState" : "ENABLED",
+      "type" : "org.apache.nifi.csv.CSVRecordSetWriter"
+    } ],
+    "defaultBackPressureDataSizeThreshold" : "1 GB",
+    "defaultBackPressureObjectThreshold" : 10000,
+    "defaultFlowFileExpiration" : "0 sec",
+    "executionEngine" : "INHERITED",
+    "externalControllerServiceReferences" : { },
+    "flowFileConcurrency" : "UNBOUNDED",
+    "flowFileOutboundPolicy" : "STREAM_WHEN_AVAILABLE",
+    "funnels" : [ ],
+    "identifier" : "flow-contents-group",
+    "inputPorts" : [ ],
+    "labels" : [ ],
+    "maxConcurrentTasks" : 1,
+    "name" : "NamingTestFlow",
+    "outputPorts" : [ ],
+    "parameterContextName" : "acme_prod_postgres_rbs_inventorydb_secrets",
+    "position" : {
+      "x" : 0.0,
+      "y" : 0.0
+    },
+    "processGroups" : [ ],
+    "processors" : [ {
+      "autoTerminatedRelationships" : [ ],
+      "backoffMechanism" : "PENALIZE_FLOWFILE",
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-standard-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "PROCESSOR",
+      "concurrentlySchedulableTaskCount" : 1,
+      "executionNode" : "ALL",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "proc-gen-ff-001",
+      "maxBackoffPeriod" : "10 mins",
+      "name" : "GENERATE_FLOW_FILE",
+      "penaltyDuration" : "30 sec",
+      "position" : {
+        "x" : 0.0,
+        "y" : 0.0
+      },
+      "properties" : {
+        "Batch Size" : "1"
+      },
+      "propertyDescriptors" : { },
+      "retriedRelationships" : [ ],
+      "retryCount" : 10,
+      "runDurationMillis" : 0,
+      "scheduledState" : "ENABLED",
+      "schedulingPeriod" : "1 min",
+      "schedulingStrategy" : "TIMER_DRIVEN",
+      "style" : { },
+      "type" : "org.apache.nifi.processors.standard.GenerateFlowFile",
+      "yieldDuration" : "1 sec"
+    }, {
+      "autoTerminatedRelationships" : [ ],
+      "backoffMechanism" : "PENALIZE_FLOWFILE",
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-update-attribute-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "PROCESSOR",
+      "concurrentlySchedulableTaskCount" : 1,
+      "executionNode" : "ALL",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "proc-update-attr-001",
+      "maxBackoffPeriod" : "10 mins",
+      "name" : "UPDATE_ATTRIBUTE",
+      "penaltyDuration" : "30 sec",
+      "position" : {
+        "x" : 200.0,
+        "y" : 0.0
+      },
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "retriedRelationships" : [ ],
+      "retryCount" : 10,
+      "runDurationMillis" : 0,
+      "scheduledState" : "ENABLED",
+      "schedulingPeriod" : "0 sec",
+      "schedulingStrategy" : "TIMER_DRIVEN",
+      "style" : { },
+      "type" : "org.apache.nifi.processors.attributes.UpdateAttribute",
+      "yieldDuration" : "1 sec"
+    }, {
+      "autoTerminatedRelationships" : [ "Response", "No Retry", "Retry", "Original", "Failure" ],
+      "backoffMechanism" : "PENALIZE_FLOWFILE",
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-standard-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "PROCESSOR",
+      "concurrentlySchedulableTaskCount" : 1,
+      "executionNode" : "ALL",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "proc-invoke-http-001",
+      "maxBackoffPeriod" : "10 mins",
+      "name" : "InvokeHTTP",
+      "penaltyDuration" : "30 sec",
+      "position" : {
+        "x" : 400.0,
+        "y" : 0.0
+      },
+      "properties" : {
+        "HTTP Method" : "GET",
+        "HTTP URL" : "http://localhost"
+      },
+      "propertyDescriptors" : { },
+      "retriedRelationships" : [ ],
+      "retryCount" : 10,
+      "runDurationMillis" : 0,
+      "scheduledState" : "ENABLED",
+      "schedulingPeriod" : "0 sec",
+      "schedulingStrategy" : "TIMER_DRIVEN",
+      "style" : { },
+      "type" : "org.apache.nifi.processors.standard.InvokeHTTP",
+      "yieldDuration" : "1 sec"
+    }, {
+      "autoTerminatedRelationships" : [ ],
+      "backoffMechanism" : "PENALIZE_FLOWFILE",
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-standard-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "PROCESSOR",
+      "concurrentlySchedulableTaskCount" : 1,
+      "executionNode" : "ALL",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "proc-exec-sql-001",
+      "maxBackoffPeriod" : "10 mins",
+      "name" : "CUSTOMER_SEL",
+      "penaltyDuration" : "30 sec",
+      "position" : {
+        "x" : 600.0,
+        "y" : 0.0
+      },
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "retriedRelationships" : [ ],
+      "retryCount" : 10,
+      "runDurationMillis" : 0,
+      "scheduledState" : "ENABLED",
+      "schedulingPeriod" : "0 sec",
+      "schedulingStrategy" : "TIMER_DRIVEN",
+      "style" : { },
+      "type" : "org.apache.nifi.processors.standard.ExecuteSQLRecord",
+      "yieldDuration" : "1 sec"
+    }, {
+      "autoTerminatedRelationships" : [ ],
+      "backoffMechanism" : "PENALIZE_FLOWFILE",
+      "bulletinLevel" : "WARN",
+      "bundle" : {
+        "artifact" : "nifi-snowflake-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      },
+      "comments" : "",
+      "componentType" : "PROCESSOR",
+      "concurrentlySchedulableTaskCount" : 1,
+      "executionNode" : "ALL",
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "proc-put-stage-001",
+      "maxBackoffPeriod" : "10 mins",
+      "name" : "CUSTOMER_ISTG",
+      "penaltyDuration" : "30 sec",
+      "position" : {
+        "x" : 800.0,
+        "y" : 0.0
+      },
+      "properties" : { },
+      "propertyDescriptors" : { },
+      "retriedRelationships" : [ ],
+      "retryCount" : 10,
+      "runDurationMillis" : 0,
+      "scheduledState" : "ENABLED",
+      "schedulingPeriod" : "0 sec",
+      "schedulingStrategy" : "TIMER_DRIVEN",
+      "style" : { },
+      "type" : "org.apache.nifi.processors.snowflake.PutSnowflakeInternalStage",
+      "yieldDuration" : "1 sec"
+    } ],
+    "remoteProcessGroups" : [ ],
+    "scheduledState" : "ENABLED",
+    "statelessFlowTimeout" : "1 min"
+  },
+  "flowEncodingVersion" : "1.0",
+  "latest" : false,
+  "parameterContexts" : {
+    "acme_prod_postgres_rbs_inventorydb_secrets" : {
+      "componentType" : "PARAMETER_CONTEXT",
+      "inheritedParameterContexts" : [ ],
+      "name" : "acme_prod_postgres_rbs_inventorydb_secrets",
+      "parameters" : [ {
+        "description" : "",
+        "name" : "db.password",
+        "provided" : false,
+        "sensitive" : true
+      } ]
+    },
+    "Test Parameter Context" : {
+      "componentType" : "PARAMETER_CONTEXT",
+      "inheritedParameterContexts" : [ ],
+      "name" : "Test Parameter Context",
+      "parameters" : [ {
+        "description" : "",
+        "name" : "some.param",
+        "provided" : false,
+        "sensitive" : false,
+        "value" : "some-value"
+      } ]
+    },
+    "common_parameter_context" : {
+      "componentType" : "PARAMETER_CONTEXT",
+      "inheritedParameterContexts" : [ ],
+      "name" : "common_parameter_context",
+      "parameters" : [ {
+        "description" : "",
+        "name" : "shared.param",
+        "provided" : false,
+        "sensitive" : false,
+        "value" : "shared-value"
+      } ]
+    }
+  },
+  "parameterProviders" : {
+    "pp-valid-001" : {
+      "identifier" : "pp-valid-001",
+      "name" : "acme_prod_mssql_landmark_secrets",
+      "type" : "org.apache.nifi.parameter.aws.AwsSecretsManagerParameterProvider",
+      "bundle" : {
+        "artifact" : "nifi-aws-parameter-provider-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      }
+    },
+    "pp-invalid-001" : {
+      "identifier" : "pp-invalid-001",
+      "name" : "Acme_Prod_Mssql_Secrets",
+      "type" : "org.apache.nifi.parameter.aws.AwsSecretsManagerParameterProvider",
+      "bundle" : {
+        "artifact" : "nifi-aws-parameter-provider-nar",
+        "group" : "org.apache.nifi",
+        "version" : "2.2.0"
+      }
+    }
+  },
+  "snapshotMetadata" : {
+    "author" : "test@example.com",
+    "flowIdentifier" : "naming-test",
+    "timestamp" : 0
+  }
+}

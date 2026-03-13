@@ -14,9 +14,12 @@
 # limitations under the License.
 
 include:
-  - noSelfLoop
+  - processorNaming
 rules:
-  noSelfLoop:
+  processorNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.processors.standard.InvokeHTTP: ".*_EXT$"
     componentExclusions:
-      "test":
-        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+      "naming-test":
+        - "proc-invoke-http-001"

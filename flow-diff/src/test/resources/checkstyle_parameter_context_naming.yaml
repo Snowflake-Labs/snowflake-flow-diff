@@ -14,9 +14,10 @@
 # limitations under the License.
 
 include:
-  - noSelfLoop
+  - parameterContextNaming
 rules:
-  noSelfLoop:
-    componentExclusions:
-      "test":
-        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+  parameterContextNaming:
+    parameters:
+      defaultPattern: "^acme_(dev|preprod|prod)_[a-z0-9_]+_(secrets|config)$"
+      exclude:
+        - "common_parameter_context"
