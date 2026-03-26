@@ -36,7 +36,7 @@
         <nifi-api.version>2.7.0</nifi-api.version>
         <nifi-framework.version>2.8.0</nifi-framework.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <jackson.version>2.21.1</jackson.version>
+        <jackson.version>2.21.2</jackson.version>
         <junit.version>6.0.3</junit.version>
     </properties>
  
