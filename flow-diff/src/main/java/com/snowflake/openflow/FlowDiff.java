@@ -18,6 +18,7 @@ package com.snowflake.openflow;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,6 +76,7 @@ public class FlowDiff {
     private static Map<String, VersionedParameterContext> parameterContexts;
     private static Map<String, VersionedProcessGroup> processGroups;
     private static List<String> checkstyleViolations;
+    private static boolean jsonParseError;
 
     public static void main(String[] args) throws IOException {
         final int exitCode = run(args);
@@ -134,6 +136,7 @@ public class FlowDiff {
             }
 
             boolean hasBlockingCheckstyleViolations = false;
+            boolean hasParseErrors = false;
 
             for (int i = 0; i < pathsA.size(); i++) {
                 System.out.println("");
@@ -141,9 +144,11 @@ public class FlowDiff {
                 flowName = "";
                 parameterContexts = new HashMap<>();
                 processGroups = new HashMap<>();
+                jsonParseError = false;
 
                 final boolean flowHasCheckstyleViolations = executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
                 hasBlockingCheckstyleViolations = hasBlockingCheckstyleViolations || flowHasCheckstyleViolations;
+                hasParseErrors = hasParseErrors || jsonParseError;
             }
 
             // Post to GitHub if credentials are provided
@@ -162,6 +167,10 @@ public class FlowDiff {
                 }
             }
 
+            if (hasParseErrors) {
+                return RETURN_FAILURE;
+            }
+
             if (checkstyleEnabled && failOnCheckstyleViolations && hasBlockingCheckstyleViolations) {
                 return RETURN_CHECKSTYLE_VIOLATIONS;
             }
@@ -174,7 +183,22 @@ public class FlowDiff {
 
     private static boolean executeFlowDiffForOneFlow(final String pathA, final String pathB,
             final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
-        final Set<FlowDifference> diffs = getDiff(pathA, pathB, checkstyleEnabled, rulesConfig);
+        final Set<FlowDifference> diffs;
+        try {
+            diffs = getDiff(pathA, pathB, checkstyleEnabled, rulesConfig);
+        } catch (JsonParseException e) {
+            jsonParseError = true;
+            System.out.println("### Executing Snowflake Flow Diff for flow: `" + pathB + "`");
+            System.out.println("");
+            System.out.println("> [!CAUTION]");
+            System.out.println("> " + e.getOriginalMessage());
+            if (e.getLocation() != null) {
+                System.out.println("> Line " + e.getLocation().getLineNr()
+                        + ", column " + e.getLocation().getColumnNr());
+            }
+            System.out.println("");
+            return false;
+        }
         final Set<String> bundleChanges = new HashSet<>();
         boolean flowHasCheckstyleViolations = false;
 
@@ -566,6 +590,9 @@ public class FlowDiff {
 
     public static Set<FlowDifference> getDiff(final String pathA, final String pathB,
             final boolean checkstyleEnabled, final CheckstyleRulesConfig rulesConfig) throws IOException {
+        validateNoDuplicateKeys(pathA);
+        validateNoDuplicateKeys(pathB);
+
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -576,7 +603,7 @@ public class FlowDiff {
         FlowSnapshotContainer snapshotA = null;
         try {
             snapshotA = getFlowContainer(pathA, factory);
-        } catch (Exception e) {
+        } catch (IOException e) {
             // no original flow - meaning that the Github Action is executed against the
             // first version of the flow
             noOriginalFlow = true;
@@ -702,6 +729,24 @@ public class FlowDiff {
         try (final JsonParser parser = factory.createParser(snapshotFile)) {
             final RegisteredFlowSnapshot snapshot = parser.readValueAs(RegisteredFlowSnapshot.class);
             return new FlowSnapshotContainer(snapshot);
+        }
+    }
+
+    static void validateNoDuplicateKeys(final String path) throws IOException {
+        final File file = new File(path);
+        if (!file.exists()) {
+            return;
+        }
+        final JsonFactory strictFactory = new JsonFactory();
+        strictFactory.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
+        try (final JsonParser parser = strictFactory.createParser(file)) {
+            while (parser.nextToken() != null) {}
+        } catch (JsonParseException e) {
+            throw new JsonParseException(null,
+                    "Flow file `" + path + "` contains duplicate JSON keys"
+                            + " (this typically indicates a merge conflict that was not fully resolved)"
+                            + ": " + e.getOriginalMessage(),
+                    e.getLocation());
         }
     }
 
