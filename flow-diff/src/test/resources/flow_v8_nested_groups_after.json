@@ -1,0 +1,298 @@
+{
+  "externalControllerServices": {},
+  "flow": {
+    "createdTimestamp": 1726000168945,
+    "description": "test nested groups",
+    "identifier": "nested-flow-test",
+    "lastModifiedTimestamp": 1726000168945,
+    "name": "NestedGroupsFlow",
+    "versionCount": 0
+  },
+  "flowContents": {
+    "comments": "",
+    "componentType": "PROCESS_GROUP",
+    "connections": [],
+    "controllerServices": [],
+    "defaultBackPressureDataSizeThreshold": "1 GB",
+    "defaultBackPressureObjectThreshold": 10000,
+    "defaultFlowFileExpiration": "0 sec",
+    "executionEngine": "INHERITED",
+    "externalControllerServiceReferences": {},
+    "flowFileConcurrency": "UNBOUNDED",
+    "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+    "funnels": [],
+    "identifier": "nested-root-pg",
+    "inputPorts": [],
+    "labels": [],
+    "maxConcurrentTasks": 1,
+    "name": "NestedGroupsFlow",
+    "outputPorts": [],
+    "position": {"x": 0.0, "y": 0.0},
+    "processGroups": [
+      {
+        "comments": "",
+        "componentType": "PROCESS_GROUP",
+        "connections": [],
+        "controllerServices": [],
+        "defaultBackPressureDataSizeThreshold": "1 GB",
+        "defaultBackPressureObjectThreshold": 10000,
+        "defaultFlowFileExpiration": "0 sec",
+        "executionEngine": "INHERITED",
+        "externalControllerServiceReferences": {},
+        "flowFileConcurrency": "UNBOUNDED",
+        "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+        "funnels": [],
+        "groupIdentifier": "nested-root-pg",
+        "identifier": "nested-group-a",
+        "inputPorts": [],
+        "labels": [],
+        "maxConcurrentTasks": 1,
+        "name": "Group A",
+        "outputPorts": [],
+        "position": {"x": 0.0, "y": 0.0},
+        "processGroups": [],
+        "processors": [
+          {
+            "autoTerminatedRelationships": ["success"],
+            "backoffMechanism": "PENALIZE_FLOWFILE",
+            "bulletinLevel": "WARN",
+            "bundle": {
+              "artifact": "nifi-standard-nar",
+              "group": "org.apache.nifi",
+              "version": "2.0.0"
+            },
+            "comments": "",
+            "componentType": "PROCESSOR",
+            "concurrentlySchedulableTaskCount": 1,
+            "executionNode": "ALL",
+            "groupIdentifier": "nested-group-a",
+            "identifier": "proc-group-a-generate",
+            "maxBackoffPeriod": "10 mins",
+            "name": "GenerateFlowFile",
+            "penaltyDuration": "30 sec",
+            "position": {"x": 0.0, "y": 0.0},
+            "properties": {
+              "File Size": "1 KB",
+              "Batch Size": "1",
+              "Data Format": "Text",
+              "Unique FlowFiles": "false",
+              "character-set": "UTF-8"
+            },
+            "propertyDescriptors": {
+              "File Size": {
+                "displayName": "File Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "File Size",
+                "sensitive": false
+              },
+              "Batch Size": {
+                "displayName": "Batch Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Batch Size",
+                "sensitive": false
+              },
+              "Data Format": {
+                "displayName": "Data Format",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Data Format",
+                "sensitive": false
+              },
+              "Unique FlowFiles": {
+                "displayName": "Unique FlowFiles",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Unique FlowFiles",
+                "sensitive": false
+              },
+              "character-set": {
+                "displayName": "Character Set",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "character-set",
+                "sensitive": false
+              }
+            },
+            "retriedRelationships": [],
+            "retryCount": 10,
+            "runDurationMillis": 0,
+            "scheduledState": "ENABLED",
+            "schedulingPeriod": "1 min",
+            "schedulingStrategy": "TIMER_DRIVEN",
+            "style": {},
+            "type": "org.apache.nifi.processors.standard.GenerateFlowFile",
+            "yieldDuration": "1 sec"
+          }
+        ],
+        "remoteProcessGroups": [],
+        "scheduledState": "ENABLED",
+        "statelessFlowTimeout": "1 min"
+      },
+      {
+        "comments": "",
+        "componentType": "PROCESS_GROUP",
+        "connections": [],
+        "controllerServices": [],
+        "defaultBackPressureDataSizeThreshold": "1 GB",
+        "defaultBackPressureObjectThreshold": 10000,
+        "defaultFlowFileExpiration": "0 sec",
+        "executionEngine": "INHERITED",
+        "externalControllerServiceReferences": {},
+        "flowFileConcurrency": "UNBOUNDED",
+        "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+        "funnels": [],
+        "groupIdentifier": "nested-root-pg",
+        "identifier": "nested-group-b",
+        "inputPorts": [],
+        "labels": [],
+        "maxConcurrentTasks": 1,
+        "name": "Group B",
+        "outputPorts": [],
+        "position": {"x": 400.0, "y": 0.0},
+        "processGroups": [],
+        "processors": [
+          {
+            "autoTerminatedRelationships": ["success"],
+            "backoffMechanism": "PENALIZE_FLOWFILE",
+            "bulletinLevel": "WARN",
+            "bundle": {
+              "artifact": "nifi-standard-nar",
+              "group": "org.apache.nifi",
+              "version": "2.0.0"
+            },
+            "comments": "",
+            "componentType": "PROCESSOR",
+            "concurrentlySchedulableTaskCount": 1,
+            "executionNode": "ALL",
+            "groupIdentifier": "nested-group-b",
+            "identifier": "proc-group-b-generate",
+            "maxBackoffPeriod": "10 mins",
+            "name": "GenerateFlowFile",
+            "penaltyDuration": "30 sec",
+            "position": {"x": 0.0, "y": 0.0},
+            "properties": {
+              "File Size": "0B",
+              "Batch Size": "1",
+              "Data Format": "Text",
+              "Unique FlowFiles": "false",
+              "character-set": "UTF-8"
+            },
+            "propertyDescriptors": {
+              "File Size": {
+                "displayName": "File Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "File Size",
+                "sensitive": false
+              },
+              "Batch Size": {
+                "displayName": "Batch Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Batch Size",
+                "sensitive": false
+              },
+              "Data Format": {
+                "displayName": "Data Format",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Data Format",
+                "sensitive": false
+              },
+              "Unique FlowFiles": {
+                "displayName": "Unique FlowFiles",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Unique FlowFiles",
+                "sensitive": false
+              },
+              "character-set": {
+                "displayName": "Character Set",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "character-set",
+                "sensitive": false
+              }
+            },
+            "retriedRelationships": [],
+            "retryCount": 10,
+            "runDurationMillis": 0,
+            "scheduledState": "ENABLED",
+            "schedulingPeriod": "1 min",
+            "schedulingStrategy": "TIMER_DRIVEN",
+            "style": {},
+            "type": "org.apache.nifi.processors.standard.GenerateFlowFile",
+            "yieldDuration": "1 sec"
+          },
+          {
+            "autoTerminatedRelationships": ["success"],
+            "backoffMechanism": "PENALIZE_FLOWFILE",
+            "bulletinLevel": "WARN",
+            "bundle": {
+              "artifact": "nifi-update-attribute-nar",
+              "group": "org.apache.nifi",
+              "version": "2.0.0"
+            },
+            "comments": "",
+            "componentType": "PROCESSOR",
+            "concurrentlySchedulableTaskCount": 1,
+            "executionNode": "ALL",
+            "groupIdentifier": "nested-group-b",
+            "identifier": "proc-group-b-update",
+            "maxBackoffPeriod": "10 mins",
+            "name": "UpdateAttribute",
+            "penaltyDuration": "30 sec",
+            "position": {"x": 0.0, "y": 200.0},
+            "properties": {
+              "Store State": "Do not store state",
+              "canonical-value-lookup-cache-size": "100"
+            },
+            "propertyDescriptors": {
+              "Store State": {
+                "displayName": "Store State",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "Store State",
+                "sensitive": false
+              },
+              "canonical-value-lookup-cache-size": {
+                "displayName": "Cache Value Lookup Cache Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "canonical-value-lookup-cache-size",
+                "sensitive": false
+              }
+            },
+            "retriedRelationships": [],
+            "retryCount": 10,
+            "runDurationMillis": 0,
+            "scheduledState": "ENABLED",
+            "schedulingPeriod": "0 sec",
+            "schedulingStrategy": "TIMER_DRIVEN",
+            "style": {},
+            "type": "org.apache.nifi.processors.attributes.UpdateAttribute",
+            "yieldDuration": "1 sec"
+          }
+        ],
+        "remoteProcessGroups": [],
+        "scheduledState": "ENABLED",
+        "statelessFlowTimeout": "1 min"
+      }
+    ],
+    "processors": [],
+    "remoteProcessGroups": [],
+    "scheduledState": "ENABLED",
+    "statelessFlowTimeout": "1 min"
+  },
+  "flowEncodingVersion": "1.0",
+  "latest": false,
+  "parameterContexts": {},
+  "parameterProviders": {},
+  "snapshotMetadata": {
+    "author": "test",
+    "flowIdentifier": "nested-flow-test",
+    "timestamp": 0
+  }
+}

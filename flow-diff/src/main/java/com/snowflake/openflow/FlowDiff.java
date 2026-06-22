@@ -196,7 +196,41 @@ public class FlowDiff {
 
             System.out.println("#### Flow Changes");
 
+            // Phase 1: collect bundle changes and group remaining diffs by process group path
+            final Map<String, List<FlowDifference>> groupedDiffs = new LinkedHashMap<>();
             for (FlowDifference diff : diffs) {
+                switch (diff.getDifferenceType()) {
+                case BUNDLE_CHANGED:
+                    Bundle before = (Bundle) diff.getValueA();
+                    Bundle after = (Bundle) diff.getValueB();
+                    bundleChanges.add("- The bundle `"
+                            + before.getGroup() + ":" + before.getArtifact()
+                            + "` has been changed from version "
+                            + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
+                    break;
+                case SIZE_CHANGED, STYLE_CHANGED, POSITION_CHANGED, BENDPOINTS_CHANGED, ZINDEX_CHANGED:
+                    // no need to print these, they are not relevant for the user
+                    break;
+                default:
+                    groupedDiffs.computeIfAbsent(getGroupPathForDiff(diff), k -> new ArrayList<>()).add(diff);
+                }
+            }
+
+            // Phase 2: print each group with a header, parameter contexts section last
+            final List<String> sortedPaths = new ArrayList<>(groupedDiffs.keySet());
+            sortedPaths.sort((a, b) -> {
+                if (a.equals(PARAMETER_CONTEXTS_SECTION)) return 1;
+                if (b.equals(PARAMETER_CONTEXTS_SECTION)) return -1;
+                return a.compareTo(b);
+            });
+
+            for (final String groupPath : sortedPaths) {
+                final List<FlowDifference> groupDiffs = groupedDiffs.get(groupPath);
+                final int count = groupDiffs.size();
+                System.out.println("");
+                System.out.println("**`" + groupPath + "`** \u2014 " + count + (count == 1 ? " change" : " changes"));
+
+                for (FlowDifference diff : groupDiffs) {
 
                 switch (diff.getDifferenceType()) {
                 case COMPONENT_ADDED: {
@@ -212,10 +246,8 @@ public class FlowDiff {
                         printConfigurableExtensionProperties(proc);
                     } else if (diff.getComponentB().getComponentType().equals(ComponentType.CONTROLLER_SERVICE)) {
                         final VersionedControllerService cs = (VersionedControllerService) diff.getComponentB();
-                        final VersionedProcessGroup csPg = processGroups.get(cs.getGroupIdentifier());
-                        final String pgName = csPg == null ? cs.getGroupIdentifier() : csPg.getName();
                         System.out.println("- A " + printComponent(diff.getComponentB())
-                                + " has been added in Process Group `" + pgName + "` with the below properties:");
+                                + " has been added with the below properties:");
                         printConfigurableExtensionProperties(cs);
                     } else if (diff.getComponentB().getComponentType().equals(ComponentType.LABEL)) {
                         final VersionedLabel label = (VersionedLabel) diff.getComponentB();
@@ -344,14 +376,6 @@ public class FlowDiff {
                             + ", the Scheduling Strategy changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
                 }
-                case BUNDLE_CHANGED:
-                    Bundle before = (Bundle) diff.getValueA();
-                    Bundle after = (Bundle) diff.getValueB();
-                    bundleChanges.add("- The bundle `"
-                            + before.getGroup() + ":" + before.getArtifact()
-                            + "` has been changed from version "
-                            + "`" + before.getVersion() + "` to version `" + after.getVersion() + "`");
-                    break;
                 case NAME_CHANGED: {
                     System.out.println("- A " + printComponent(diff.getComponentA())
                             + " has been renamed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
@@ -518,9 +542,6 @@ public class FlowDiff {
                     System.out.println("- In " + printComponent(diff.getComponentA()) + ", the sensitivity of the property `"
                             + diff.getFieldName().get() + "` changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
                     break;
-                case SIZE_CHANGED, STYLE_CHANGED, POSITION_CHANGED, BENDPOINTS_CHANGED, ZINDEX_CHANGED:
-                    // no need to print these, they are not relevant for the user
-                    break;
                 case FLOWFILE_CONCURRENCY_CHANGED:
                     System.out.println("- In " + printComponent(diff.getComponentB())
                             + ", the FlowFile Concurrency changed from `" + diff.getValueA() + "` to `" + diff.getValueB() + "`");
@@ -546,7 +567,8 @@ public class FlowDiff {
                     System.out.println("  - " + diff.getFieldName());
                     break;
                 }
-            }
+                } // end inner diff loop
+            } // end group loop
 
             if (bundleChanges.size() > 0) {
                 System.out.println("");
@@ -589,6 +611,12 @@ public class FlowDiff {
         sanitizeProcessGroup(snapshotB.getFlowSnapshot().getFlowContents());
 
         processGroups = new HashMap<>();
+        // Register A's groups first so B can overwrite — B takes display-name priority
+        if (snapshotA != null) {
+            final VersionedProcessGroup rootPGA = snapshotA.getFlowSnapshot().getFlowContents();
+            processGroups.put(rootPGA.getIdentifier(), rootPGA);
+            registerProcessGroups(rootPGA);
+        }
         VersionedProcessGroup rootPG = snapshotB.getFlowSnapshot().getFlowContents();
         processGroups.put(rootPG.getIdentifier(), rootPG);
         registerProcessGroups(rootPG);
@@ -665,6 +693,42 @@ public class FlowDiff {
             processGroups.put(pg.getIdentifier(), pg);
             registerProcessGroups(pg);
         }
+    }
+
+    static final String PARAMETER_CONTEXTS_SECTION = "(Parameter Contexts)";
+
+    static String buildProcessGroupPath(final String startGroupId) {
+        if (startGroupId == null) {
+            return PARAMETER_CONTEXTS_SECTION;
+        }
+        final List<String> pathParts = new ArrayList<>();
+        String currentId = startGroupId;
+        final Set<String> visited = new HashSet<>();
+        while (currentId != null && !visited.contains(currentId)) {
+            visited.add(currentId);
+            final VersionedProcessGroup pg = processGroups.get(currentId);
+            if (pg == null) {
+                pathParts.add(0, currentId);
+                break;
+            }
+            final String name = pg.getName();
+            pathParts.add(0, (name != null && !name.isEmpty()) ? name : currentId);
+            currentId = pg.getGroupIdentifier();
+        }
+        return pathParts.isEmpty() ? startGroupId : String.join(" > ", pathParts);
+    }
+
+    static String getGroupPathForDiff(final FlowDifference diff) {
+        final VersionedComponent component = diff.getComponentA() != null ? diff.getComponentA() : diff.getComponentB();
+        if (component == null) {
+            return PARAMETER_CONTEXTS_SECTION;
+        }
+        if (component instanceof VersionedParameterContext) {
+            return PARAMETER_CONTEXTS_SECTION;
+        }
+        final String groupId = component.getGroupIdentifier();
+        // groupId is null when the component is the root process group itself
+        return groupId != null ? buildProcessGroupPath(groupId) : buildProcessGroupPath(component.getIdentifier());
     }
 
     private static void sanitizeProcessGroup(final VersionedProcessGroup group) {
