@@ -52,7 +52,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -665,7 +664,6 @@ public class FlowDiff {
                         null,
                         null
                         ),
-                Collections.emptySet(),
                 new ConciseEvolvingDifferenceDescriptor(),
                 Function.identity(),
                 VersionedComponent::getIdentifier,
