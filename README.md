@@ -186,6 +186,8 @@ Available rules:
 
 The naming rules (`processorNaming`, `controllerServiceNaming`, `parameterContextNaming`, `parameterProviderNaming`) allow you to enforce custom naming conventions on NiFi components. They are no-ops without configuration, so they are safe to include without side effects.
 
+Patterns are evaluated with Java's `String.matches()`, which requires the **entire** name to match (as if the pattern were implicitly anchored with `^` and `$`). For example, to match names ending in `_SUFFIX`, use `.*_SUFFIX$` rather than `_SUFFIX$`.
+
 #### Processor naming
 
 Validate processor names by type. Use `patterns` to map fully qualified processor types to regex patterns, and `defaultPattern` as a fallback for types not explicitly listed:
@@ -254,7 +256,7 @@ rules:
         org.apache.nifi.parameter.aws.AwsSecretsManagerParameterProvider: "^acme_(dev|preprod|prod)_[a-z0-9_]+_secrets$"
 ```
 
-All naming rules support the standard `overrides` mechanism to apply different patterns per flow name, and `componentExclusions` to silence violations for specific component UUIDs (where applicable).
+All naming rules support the standard `overrides` mechanism to apply different patterns per flow name, and `componentExclusions` to silence violations for specific component UUIDs (where applicable). When a per-flow override specifies `patterns`, it replaces the entire top-level `patterns` map for matching flows rather than merging with it.
 
 ## Example
 

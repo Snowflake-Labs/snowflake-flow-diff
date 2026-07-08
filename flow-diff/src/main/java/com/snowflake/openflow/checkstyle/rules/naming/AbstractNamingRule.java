@@ -30,7 +30,7 @@ public abstract class AbstractNamingRule implements CheckstyleRule {
         Map<String, Object> patterns = null;
 
         if (ruleConfig != null && ruleConfig.parameters() != null && ruleConfig.parameters().get(PATTERNS_KEY) != null) {
-            patterns = (Map<String, Object>) ruleConfig.parameters().get(PATTERNS_KEY);
+            patterns = asPatternsMap(ruleConfig.parameters().get(PATTERNS_KEY));
         }
 
         if (ruleConfig != null && ruleConfig.overrides() != null) {
@@ -38,13 +38,20 @@ public abstract class AbstractNamingRule implements CheckstyleRule {
                 if (flowName != null && flowName.matches(entry.getKey())) {
                     final Object val = entry.getValue().get(PATTERNS_KEY);
                     if (val != null) {
-                        patterns = (Map<String, Object>) val;
+                        patterns = asPatternsMap(val);
                     }
                 }
             }
         }
 
         return patterns;
+    }
+
+    private static Map<String, Object> asPatternsMap(final Object value) {
+        if (!(value instanceof Map)) {
+            throw new IllegalArgumentException("'patterns' must be a map of component type to naming pattern, but was: " + value.getClass().getSimpleName());
+        }
+        return (Map<String, Object>) value;
     }
 
     protected String getDefaultPattern(final RuleConfig ruleConfig, final String flowName) {

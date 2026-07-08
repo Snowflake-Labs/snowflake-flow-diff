@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlowCheckstyleTest {
@@ -309,6 +310,39 @@ class FlowCheckstyleTest {
         final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
 
         assertTrue(violations.stream().noneMatch(v -> v.contains("acme_prod_mssql_landmark_secrets")));
+    }
+
+    @Test
+    void testProcessorNamingNestedProcessGroup() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming_nested.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_processor_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("InvokeHTTP") && v.contains("does not match") && v.contains("nested-proc-invoke-http-001")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("nested-proc-exec-sql-001")));
+    }
+
+    @Test
+    void testControllerServiceNamingNestedProcessGroup() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming_nested.json", jsonFactory);
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_controller_service_naming.yaml");
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.stream().anyMatch(v -> v.contains("Snowconnection_DEV") && v.contains("does not match") && v.contains("nested-cs-dbcp-invalid-001")));
+        assertTrue(violations.stream().noneMatch(v -> v.contains("nested-cs-dbcp-valid-001")));
+    }
+
+    @Test
+    void testNamingRulesRejectNonMapPatterns() throws IOException {
+        final FlowSnapshotContainer container = FlowDiff.getFlowContainer("src/test/resources/flow_v7_naming.json", jsonFactory);
+        final RuleConfig ruleConfig = new CheckstyleRulesConfig.RuleConfig(Map.of("patterns", "not-a-map"), null, null, null);
+        final CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("processorNaming"), null, Map.of("processorNaming", ruleConfig));
+
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config));
+        assertTrue(exception.getMessage().contains("'patterns' must be a map"));
     }
 
     @Test

@@ -1,0 +1,179 @@
+{
+  "externalControllerServices" : { },
+  "flow" : {
+    "createdTimestamp" : 1726000168945,
+    "description" : "nested naming test",
+    "identifier" : "nested-naming-test",
+    "lastModifiedTimestamp" : 1726000168945,
+    "name" : "nested-naming-test",
+    "versionCount" : 0
+  },
+  "flowContents" : {
+    "comments" : "",
+    "componentType" : "PROCESS_GROUP",
+    "connections" : [ ],
+    "controllerServices" : [ ],
+    "defaultBackPressureDataSizeThreshold" : "1 GB",
+    "defaultBackPressureObjectThreshold" : 10000,
+    "defaultFlowFileExpiration" : "0 sec",
+    "executionEngine" : "INHERITED",
+    "externalControllerServiceReferences" : { },
+    "flowFileConcurrency" : "UNBOUNDED",
+    "flowFileOutboundPolicy" : "STREAM_WHEN_AVAILABLE",
+    "funnels" : [ ],
+    "identifier" : "flow-contents-group",
+    "inputPorts" : [ ],
+    "labels" : [ ],
+    "maxConcurrentTasks" : 1,
+    "name" : "NestedNamingTestFlow",
+    "outputPorts" : [ ],
+    "position" : {
+      "x" : 0.0,
+      "y" : 0.0
+    },
+    "processGroups" : [ {
+      "comments" : "",
+      "componentType" : "PROCESS_GROUP",
+      "connections" : [ ],
+      "controllerServices" : [ {
+        "bulletinLevel" : "WARN",
+        "bundle" : {
+          "artifact" : "nifi-dbcp-service-nar",
+          "group" : "org.apache.nifi",
+          "version" : "2.2.0"
+        },
+        "comments" : "",
+        "componentType" : "CONTROLLER_SERVICE",
+        "groupIdentifier" : "child-group-001",
+        "identifier" : "nested-cs-dbcp-valid-001",
+        "name" : "acme_prod_mssql_child",
+        "properties" : { },
+        "propertyDescriptors" : { },
+        "scheduledState" : "ENABLED",
+        "type" : "org.apache.nifi.dbcp.DBCPConnectionPool"
+      }, {
+        "bulletinLevel" : "WARN",
+        "bundle" : {
+          "artifact" : "nifi-dbcp-service-nar",
+          "group" : "org.apache.nifi",
+          "version" : "2.2.0"
+        },
+        "comments" : "",
+        "componentType" : "CONTROLLER_SERVICE",
+        "groupIdentifier" : "child-group-001",
+        "identifier" : "nested-cs-dbcp-invalid-001",
+        "name" : "Snowconnection_DEV",
+        "properties" : { },
+        "propertyDescriptors" : { },
+        "scheduledState" : "ENABLED",
+        "type" : "org.apache.nifi.dbcp.DBCPConnectionPool"
+      } ],
+      "defaultBackPressureDataSizeThreshold" : "1 GB",
+      "defaultBackPressureObjectThreshold" : 10000,
+      "defaultFlowFileExpiration" : "0 sec",
+      "executionEngine" : "INHERITED",
+      "externalControllerServiceReferences" : { },
+      "flowFileConcurrency" : "UNBOUNDED",
+      "flowFileOutboundPolicy" : "STREAM_WHEN_AVAILABLE",
+      "funnels" : [ ],
+      "groupIdentifier" : "flow-contents-group",
+      "identifier" : "child-group-001",
+      "inputPorts" : [ ],
+      "labels" : [ ],
+      "maxConcurrentTasks" : 1,
+      "name" : "ChildGroup",
+      "outputPorts" : [ ],
+      "position" : {
+        "x" : 0.0,
+        "y" : 200.0
+      },
+      "processGroups" : [ ],
+      "processors" : [ {
+        "autoTerminatedRelationships" : [ ],
+        "backoffMechanism" : "PENALIZE_FLOWFILE",
+        "bulletinLevel" : "WARN",
+        "bundle" : {
+          "artifact" : "nifi-standard-nar",
+          "group" : "org.apache.nifi",
+          "version" : "2.2.0"
+        },
+        "comments" : "",
+        "componentType" : "PROCESSOR",
+        "concurrentlySchedulableTaskCount" : 1,
+        "executionNode" : "ALL",
+        "groupIdentifier" : "child-group-001",
+        "identifier" : "nested-proc-invoke-http-001",
+        "maxBackoffPeriod" : "10 mins",
+        "name" : "InvokeHTTP",
+        "penaltyDuration" : "30 sec",
+        "position" : {
+          "x" : 0.0,
+          "y" : 0.0
+        },
+        "properties" : {
+          "HTTP Method" : "GET",
+          "HTTP URL" : "http://localhost"
+        },
+        "propertyDescriptors" : { },
+        "retriedRelationships" : [ ],
+        "retryCount" : 10,
+        "runDurationMillis" : 0,
+        "scheduledState" : "ENABLED",
+        "schedulingPeriod" : "0 sec",
+        "schedulingStrategy" : "TIMER_DRIVEN",
+        "style" : { },
+        "type" : "org.apache.nifi.processors.standard.InvokeHTTP",
+        "yieldDuration" : "1 sec"
+      }, {
+        "autoTerminatedRelationships" : [ ],
+        "backoffMechanism" : "PENALIZE_FLOWFILE",
+        "bulletinLevel" : "WARN",
+        "bundle" : {
+          "artifact" : "nifi-standard-nar",
+          "group" : "org.apache.nifi",
+          "version" : "2.2.0"
+        },
+        "comments" : "",
+        "componentType" : "PROCESSOR",
+        "concurrentlySchedulableTaskCount" : 1,
+        "executionNode" : "ALL",
+        "groupIdentifier" : "child-group-001",
+        "identifier" : "nested-proc-exec-sql-001",
+        "maxBackoffPeriod" : "10 mins",
+        "name" : "CUSTOMER_SEL",
+        "penaltyDuration" : "30 sec",
+        "position" : {
+          "x" : 200.0,
+          "y" : 0.0
+        },
+        "properties" : { },
+        "propertyDescriptors" : { },
+        "retriedRelationships" : [ ],
+        "retryCount" : 10,
+        "runDurationMillis" : 0,
+        "scheduledState" : "ENABLED",
+        "schedulingPeriod" : "0 sec",
+        "schedulingStrategy" : "TIMER_DRIVEN",
+        "style" : { },
+        "type" : "org.apache.nifi.processors.standard.ExecuteSQLRecord",
+        "yieldDuration" : "1 sec"
+      } ],
+      "remoteProcessGroups" : [ ],
+      "scheduledState" : "ENABLED",
+      "statelessFlowTimeout" : "1 min"
+    } ],
+    "processors" : [ ],
+    "remoteProcessGroups" : [ ],
+    "scheduledState" : "ENABLED",
+    "statelessFlowTimeout" : "1 min"
+  },
+  "flowEncodingVersion" : "1.0",
+  "latest" : false,
+  "parameterContexts" : { },
+  "parameterProviders" : { },
+  "snapshotMetadata" : {
+    "author" : "test@example.com",
+    "flowIdentifier" : "nested-naming-test",
+    "timestamp" : 0
+  }
+}
