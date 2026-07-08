@@ -14,9 +14,13 @@
 # limitations under the License.
 
 include:
-  - noSelfLoop
+  - processorNaming
 rules:
-  noSelfLoop:
-    componentExclusions:
-      "test":
-        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+  processorNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.processors.standard.GenerateFlowFile: "^GENERATE_FLOW_FILE$"
+        org.apache.nifi.processors.attributes.UpdateAttribute: "^UPDATE_ATTRIBUTE$"
+        org.apache.nifi.processors.standard.InvokeHTTP: ".*_EXT$"
+        org.apache.nifi.processors.standard.ExecuteSQLRecord: ".*_(SEL|COPY|UPD_SEL|UPD_INS|EXT)$|^SP_.*"
+        org.apache.nifi.processors.snowflake.PutSnowflakeInternalStage: ".*_ISTG$"

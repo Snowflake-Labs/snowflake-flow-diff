@@ -14,9 +14,11 @@
 # limitations under the License.
 
 include:
-  - noSelfLoop
+  - processorNaming
 rules:
-  noSelfLoop:
-    componentExclusions:
-      "test":
-        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+  processorNaming:
+    parameters:
+      defaultPattern: "^[A-Z][A-Z0-9_]+$"
+    overrides:
+      "naming-test":
+        defaultPattern: ".*"

@@ -14,9 +14,10 @@
 # limitations under the License.
 
 include:
-  - noSelfLoop
+  - controllerServiceNaming
 rules:
-  noSelfLoop:
-    componentExclusions:
-      "test":
-        - "2d8da922-fd1f-3519-9d54-6482dfd42c56"
+  controllerServiceNaming:
+    parameters:
+      patterns:
+        org.apache.nifi.dbcp.DBCPConnectionPool: "^acme_(dev|preprod|prod)_[a-z0-9_]+$"
+      defaultPattern: "^[a-z][a-z0-9_]+$"

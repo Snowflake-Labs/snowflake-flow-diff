@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Snowflake Inc.
+ * Copyright 2026 Snowflake Inc.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +19,16 @@ package com.snowflake.openflow.checkstyle;
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
 import com.snowflake.openflow.checkstyle.rules.BackpressureThresholdRule;
 import com.snowflake.openflow.checkstyle.rules.ConcurrentTasksRule;
-import com.snowflake.openflow.checkstyle.rules.DefaultParameterRule;
-import com.snowflake.openflow.checkstyle.rules.EmptyParameterRule;
 import com.snowflake.openflow.checkstyle.rules.EnforcePrioritizer;
 import com.snowflake.openflow.checkstyle.rules.NoSelfLoopRule;
 import com.snowflake.openflow.checkstyle.rules.SnapshotMetadataRule;
-import com.snowflake.openflow.checkstyle.rules.UnusedParameterRule;
+import com.snowflake.openflow.checkstyle.rules.naming.ControllerServiceNamingRule;
+import com.snowflake.openflow.checkstyle.rules.naming.ParameterContextNamingRule;
+import com.snowflake.openflow.checkstyle.rules.naming.ParameterProviderNamingRule;
+import com.snowflake.openflow.checkstyle.rules.naming.ProcessorNamingRule;
+import com.snowflake.openflow.checkstyle.rules.parameter.DefaultParameterRule;
+import com.snowflake.openflow.checkstyle.rules.parameter.EmptyParameterRule;
+import com.snowflake.openflow.checkstyle.rules.parameter.UnusedParameterRule;
 
 import java.util.List;
 
@@ -37,7 +41,11 @@ public enum DefaultCheckstyleRules {
     UNUSED_PARAMETER("unusedParameter", new UnusedParameterRule()),
     NO_SELF_LOOP("noSelfLoop", new NoSelfLoopRule()),
     ENFORCE_PRIORITIZER("enforcePrioritizer", new EnforcePrioritizer()),
-    BACKPRESSURE_THRESHOLD("backpressureThreshold", new BackpressureThresholdRule());
+    BACKPRESSURE_THRESHOLD("backpressureThreshold", new BackpressureThresholdRule()),
+    PROCESSOR_NAMING("processorNaming", new ProcessorNamingRule()),
+    CONTROLLER_SERVICE_NAMING("controllerServiceNaming", new ControllerServiceNamingRule()),
+    PARAMETER_CONTEXT_NAMING("parameterContextNaming", new ParameterContextNamingRule()),
+    PARAMETER_PROVIDER_NAMING("parameterProviderNaming", new ParameterProviderNamingRule());
 
     private final String id;
     private final CheckstyleRule implementation;
