@@ -180,23 +180,49 @@ class FlowDiffTest {
     }
 
     @Test
+    void testAddedProcessGroupAppearsUnderItsOwnPath() throws IOException {
+        final String output = captureRun(
+                "src/test/resources/flow_v9_group_placement_before.json",
+                "src/test/resources/flow_v9_group_placement_after.json");
+        // The added group is placed under its own path, not under the root section
+        assertTrue(output.contains("**`PlacementFlow > Group A`**"), "Added group's own-path header missing");
+        final int ownPathHeader = output.indexOf("**`PlacementFlow > Group A`**");
+        final int addedLine = output.indexOf("Group A` has been added");
+        assertTrue(addedLine > ownPathHeader, "Group A addition should appear under its own path header");
+    }
+
+    @Test
+    void testRemovedProcessGroupAppearsUnderItsOwnPath() throws IOException {
+        final String output = captureRun(
+                "src/test/resources/flow_v9_group_placement_after.json",
+                "src/test/resources/flow_v9_group_placement_before.json");
+        // The removed group is placed under its own path, not under the root section
+        assertTrue(output.contains("**`PlacementFlow > Group A`**"), "Removed group's own-path header missing");
+        final int ownPathHeader = output.indexOf("**`PlacementFlow > Group A`**");
+        final int removedLine = output.indexOf("Group A` has been removed");
+        assertTrue(removedLine > ownPathHeader, "Group A removal should appear under its own path header");
+    }
+
+    @Test
     void testSingleGroupOutputHasGroupHeader() throws IOException {
-        final ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        final PrintStream orig = System.out;
-        System.setOut(new PrintStream(buf, true, StandardCharsets.UTF_8));
-        try {
-            FlowDiff.run(new String[]{
+        final String output = captureRun(
                 "src/test/resources/flow_v1_initial.json",
-                "src/test/resources/flow_v2_added_component.json",
-                "", "", ""
-            });
-        } finally {
-            System.setOut(orig);
-        }
-        final String output = buf.toString(StandardCharsets.UTF_8);
+                "src/test/resources/flow_v2_added_component.json");
         // Single-group flow still gets a group header
         assertTrue(output.contains("**`TestingFlowDiff`**"), "Root process group header missing");
         // No Parameter Contexts section for this diff (no param context changes)
         assertFalse(output.contains(FlowDiff.PARAMETER_CONTEXTS_SECTION), "Unexpected parameter contexts section");
+    }
+
+    private static String captureRun(final String before, final String after) throws IOException {
+        final ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        final PrintStream orig = System.out;
+        System.setOut(new PrintStream(buf, true, StandardCharsets.UTF_8));
+        try {
+            FlowDiff.run(new String[]{before, after, "", "", ""});
+        } finally {
+            System.setOut(orig);
+        }
+        return buf.toString(StandardCharsets.UTF_8);
     }
 }

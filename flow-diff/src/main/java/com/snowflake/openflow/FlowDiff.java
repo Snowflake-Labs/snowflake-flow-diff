@@ -727,7 +727,11 @@ public class FlowDiff {
             return PARAMETER_CONTEXTS_SECTION;
         }
         final String groupId = component.getGroupIdentifier();
-        // groupId is null when the component is the root process group itself
+        // A process group is placed under its own path; other components are placed under their containing group's path.
+        // groupId is null when the component is the root process group itself.
+        if (component instanceof VersionedProcessGroup) {
+            return buildProcessGroupPath(component.getIdentifier());
+        }
         return groupId != null ? buildProcessGroupPath(groupId) : buildProcessGroupPath(component.getIdentifier());
     }
 
