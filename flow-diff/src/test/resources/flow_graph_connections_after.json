@@ -1,0 +1,590 @@
+{
+  "externalControllerServices": {},
+  "flow": {
+    "createdTimestamp": 1726000168945,
+    "description": "flow graph connections after",
+    "identifier": "flow-graph-connections",
+    "lastModifiedTimestamp": 1726000168945,
+    "name": "GraphFlow",
+    "versionCount": 0
+  },
+  "flowContents": {
+    "comments": "",
+    "componentType": "PROCESS_GROUP",
+    "connections": [
+      {
+        "backPressureDataSizeThreshold": "1 GB",
+        "backPressureObjectThreshold": 10000,
+        "bends": [],
+        "componentType": "CONNECTION",
+        "destination": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-route",
+          "name": "Weird \"Node\" <x> #1 | [y]",
+          "type": "PROCESSOR"
+        },
+        "flowFileExpiration": "0 sec",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "conn-root-source-route",
+        "labelIndex": 0,
+        "loadBalanceCompression": "DO_NOT_COMPRESS",
+        "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+        "name": "",
+        "partitioningAttribute": "",
+        "prioritizers": [],
+        "selectedRelationships": ["success"],
+        "source": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-source",
+          "name": "Generate Seed",
+          "type": "PROCESSOR"
+        },
+        "zIndex": 0
+      },
+      {
+        "backPressureDataSizeThreshold": "1 GB",
+        "backPressureObjectThreshold": 10000,
+        "bends": [],
+        "componentType": "CONNECTION",
+        "destination": {
+          "comments": "",
+          "groupId": "child-group-pg",
+          "id": "child-input-1",
+          "name": "Child In",
+          "type": "INPUT_PORT"
+        },
+        "flowFileExpiration": "0 sec",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "conn-root-route-child-in",
+        "labelIndex": 0,
+        "loadBalanceCompression": "DO_NOT_COMPRESS",
+        "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+        "name": "",
+        "partitioningAttribute": "",
+        "prioritizers": [],
+        "selectedRelationships": ["matched"],
+        "source": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-route",
+          "name": "Weird \"Node\" <x> #1 | [y]",
+          "type": "PROCESSOR"
+        },
+        "zIndex": 0
+      },
+      {
+        "backPressureDataSizeThreshold": "1 GB",
+        "backPressureObjectThreshold": 10000,
+        "bends": [],
+        "componentType": "CONNECTION",
+        "destination": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-archive",
+          "name": "Archive Result",
+          "type": "PROCESSOR"
+        },
+        "flowFileExpiration": "0 sec",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "conn-root-funnel-destination",
+        "labelIndex": 0,
+        "loadBalanceCompression": "DO_NOT_COMPRESS",
+        "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+        "name": "",
+        "partitioningAttribute": "",
+        "prioritizers": [],
+        "selectedRelationships": ["success"],
+        "source": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-funnel-1",
+          "name": "Fan In",
+          "type": "FUNNEL"
+        },
+        "zIndex": 0
+      },
+      {
+        "backPressureDataSizeThreshold": "1 GB",
+        "backPressureObjectThreshold": 10000,
+        "bends": [],
+        "componentType": "CONNECTION",
+        "destination": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-audit",
+          "name": "Audit Trail",
+          "type": "PROCESSOR"
+        },
+        "flowFileExpiration": "0 sec",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "conn-root-route-audit",
+        "labelIndex": 0,
+        "loadBalanceCompression": "DO_NOT_COMPRESS",
+        "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+        "name": "",
+        "partitioningAttribute": "",
+        "prioritizers": [],
+        "selectedRelationships": ["unmatched"],
+        "source": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-proc-route",
+          "name": "Weird \"Node\" <x> #1 | [y]",
+          "type": "PROCESSOR"
+        },
+        "zIndex": 0
+      },
+      {
+        "backPressureDataSizeThreshold": "1 GB",
+        "backPressureObjectThreshold": 10000,
+        "bends": [],
+        "componentType": "CONNECTION",
+        "destination": {
+          "comments": "",
+          "groupId": "graph-root-pg",
+          "id": "root-funnel-1",
+          "name": "Fan In",
+          "type": "FUNNEL"
+        },
+        "flowFileExpiration": "0 sec",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "conn-child-out-funnel",
+        "labelIndex": 0,
+        "loadBalanceCompression": "DO_NOT_COMPRESS",
+        "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+        "name": "",
+        "partitioningAttribute": "",
+        "prioritizers": [],
+        "selectedRelationships": ["success"],
+        "source": {
+          "comments": "",
+          "groupId": "child-group-pg",
+          "id": "child-output-1",
+          "name": "Child Out",
+          "type": "OUTPUT_PORT"
+        },
+        "zIndex": 0
+      }
+    ],
+    "controllerServices": [],
+    "defaultBackPressureDataSizeThreshold": "1 GB",
+    "defaultBackPressureObjectThreshold": 10000,
+    "defaultFlowFileExpiration": "0 sec",
+    "executionEngine": "INHERITED",
+    "externalControllerServiceReferences": {},
+    "flowFileConcurrency": "UNBOUNDED",
+    "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+    "funnels": [
+      {
+        "comments": "",
+        "componentType": "FUNNEL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-funnel-1",
+        "position": {"x": 720.0, "y": 200.0}
+      }
+    ],
+    "identifier": "graph-root-pg",
+    "inputPorts": [],
+    "labels": [],
+    "maxConcurrentTasks": 1,
+    "name": "GraphFlow",
+    "outputPorts": [],
+    "position": {"x": 0.0, "y": 0.0},
+    "processGroups": [
+      {
+        "comments": "",
+        "componentType": "PROCESS_GROUP",
+        "connections": [
+          {
+            "backPressureDataSizeThreshold": "1 GB",
+            "backPressureObjectThreshold": 10000,
+            "bends": [],
+            "componentType": "CONNECTION",
+            "destination": {
+              "comments": "",
+              "groupId": "child-group-pg",
+              "id": "child-proc-transform",
+              "name": "Child Transform",
+              "type": "PROCESSOR"
+            },
+            "flowFileExpiration": "0 sec",
+            "groupIdentifier": "child-group-pg",
+            "identifier": "conn-child-in-transform",
+            "labelIndex": 0,
+            "loadBalanceCompression": "DO_NOT_COMPRESS",
+            "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+            "name": "",
+            "partitioningAttribute": "",
+            "prioritizers": [],
+            "selectedRelationships": ["success"],
+            "source": {
+              "comments": "",
+              "groupId": "child-group-pg",
+              "id": "child-input-1",
+              "name": "Child In",
+              "type": "INPUT_PORT"
+            },
+            "zIndex": 0
+          },
+          {
+            "backPressureDataSizeThreshold": "1 GB",
+            "backPressureObjectThreshold": 10000,
+            "bends": [],
+            "componentType": "CONNECTION",
+            "destination": {
+              "comments": "",
+              "groupId": "child-group-pg",
+              "id": "child-output-1",
+              "name": "Child Out",
+              "type": "OUTPUT_PORT"
+            },
+            "flowFileExpiration": "0 sec",
+            "groupIdentifier": "child-group-pg",
+            "identifier": "conn-child-transform-out",
+            "labelIndex": 0,
+            "loadBalanceCompression": "DO_NOT_COMPRESS",
+            "loadBalanceStrategy": "DO_NOT_LOAD_BALANCE",
+            "name": "",
+            "partitioningAttribute": "",
+            "prioritizers": [],
+            "selectedRelationships": ["success"],
+            "source": {
+              "comments": "",
+              "groupId": "child-group-pg",
+              "id": "child-proc-transform",
+              "name": "Child Transform",
+              "type": "PROCESSOR"
+            },
+            "zIndex": 0
+          }
+        ],
+        "controllerServices": [],
+        "defaultBackPressureDataSizeThreshold": "1 GB",
+        "defaultBackPressureObjectThreshold": 10000,
+        "defaultFlowFileExpiration": "0 sec",
+        "executionEngine": "INHERITED",
+        "externalControllerServiceReferences": {},
+        "flowFileConcurrency": "UNBOUNDED",
+        "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+        "funnels": [],
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "child-group-pg",
+        "inputPorts": [
+          {
+            "comments": "",
+            "componentType": "INPUT_PORT",
+            "concurrentlySchedulableTaskCount": 1,
+            "groupIdentifier": "child-group-pg",
+            "identifier": "child-input-1",
+            "name": "Child In",
+            "position": {"x": 0.0, "y": 0.0},
+            "scheduledState": "ENABLED"
+          }
+        ],
+        "labels": [],
+        "maxConcurrentTasks": 1,
+        "name": "Child Group",
+        "outputPorts": [
+          {
+            "comments": "",
+            "componentType": "OUTPUT_PORT",
+            "concurrentlySchedulableTaskCount": 1,
+            "groupIdentifier": "child-group-pg",
+            "identifier": "child-output-1",
+            "name": "Child Out",
+            "position": {"x": 380.0, "y": 0.0},
+            "scheduledState": "ENABLED"
+          }
+        ],
+        "position": {"x": 430.0, "y": 40.0},
+        "processGroups": [],
+        "processors": [
+          {
+            "autoTerminatedRelationships": ["success"],
+            "backoffMechanism": "PENALIZE_FLOWFILE",
+            "bulletinLevel": "WARN",
+            "bundle": {
+              "artifact": "nifi-standard-nar",
+              "group": "org.apache.nifi",
+              "version": "2.0.0"
+            },
+            "comments": "",
+            "componentType": "PROCESSOR",
+            "concurrentlySchedulableTaskCount": 1,
+            "executionNode": "ALL",
+            "groupIdentifier": "child-group-pg",
+            "identifier": "child-proc-transform",
+            "maxBackoffPeriod": "10 mins",
+            "name": "Child Transform",
+            "penaltyDuration": "30 sec",
+            "position": {"x": 180.0, "y": 0.0},
+            "properties": {},
+            "propertyDescriptors": {},
+            "retriedRelationships": [],
+            "retryCount": 10,
+            "runDurationMillis": 0,
+            "scheduledState": "ENABLED",
+            "schedulingPeriod": "0 sec",
+            "schedulingStrategy": "TIMER_DRIVEN",
+            "style": {},
+            "type": "org.apache.nifi.processors.standard.ReplaceText",
+            "yieldDuration": "1 sec"
+          }
+        ],
+        "remoteProcessGroups": [],
+        "scheduledState": "ENABLED",
+        "statelessFlowTimeout": "1 min"
+      },
+      {
+        "comments": "",
+        "componentType": "PROCESS_GROUP",
+        "connections": [],
+        "controllerServices": [],
+        "defaultBackPressureDataSizeThreshold": "1 GB",
+        "defaultBackPressureObjectThreshold": 10000,
+        "defaultFlowFileExpiration": "0 sec",
+        "executionEngine": "INHERITED",
+        "externalControllerServiceReferences": {},
+        "flowFileConcurrency": "UNBOUNDED",
+        "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+        "funnels": [],
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "config-group-pg",
+        "inputPorts": [],
+        "labels": [],
+        "maxConcurrentTasks": 1,
+        "name": "Config Group",
+        "outputPorts": [],
+        "position": {"x": 20.0, "y": 420.0},
+        "processGroups": [],
+        "processors": [
+          {
+            "autoTerminatedRelationships": ["success"],
+            "backoffMechanism": "PENALIZE_FLOWFILE",
+            "bulletinLevel": "WARN",
+            "bundle": {
+              "artifact": "nifi-standard-nar",
+              "group": "org.apache.nifi",
+              "version": "2.0.0"
+            },
+            "comments": "",
+            "componentType": "PROCESSOR",
+            "concurrentlySchedulableTaskCount": 1,
+            "executionNode": "ALL",
+            "groupIdentifier": "config-group-pg",
+            "identifier": "config-proc-1",
+            "maxBackoffPeriod": "10 mins",
+            "name": "Config Source",
+            "penaltyDuration": "30 sec",
+            "position": {"x": 0.0, "y": 0.0},
+            "properties": {
+              "File Size": "1 KB"
+            },
+            "propertyDescriptors": {
+              "File Size": {
+                "displayName": "File Size",
+                "dynamic": false,
+                "identifiesControllerService": false,
+                "name": "File Size",
+                "sensitive": false
+              }
+            },
+            "retriedRelationships": [],
+            "retryCount": 10,
+            "runDurationMillis": 0,
+            "scheduledState": "ENABLED",
+            "schedulingPeriod": "1 min",
+            "schedulingStrategy": "TIMER_DRIVEN",
+            "style": {},
+            "type": "org.apache.nifi.processors.standard.GenerateFlowFile",
+            "yieldDuration": "1 sec"
+          }
+        ],
+        "remoteProcessGroups": [],
+        "scheduledState": "ENABLED",
+        "statelessFlowTimeout": "1 min"
+      }
+    ],
+    "processors": [
+      {
+        "autoTerminatedRelationships": ["success"],
+        "backoffMechanism": "PENALIZE_FLOWFILE",
+        "bulletinLevel": "WARN",
+        "bundle": {
+          "artifact": "nifi-standard-nar",
+          "group": "org.apache.nifi",
+          "version": "2.0.0"
+        },
+        "comments": "",
+        "componentType": "PROCESSOR",
+        "concurrentlySchedulableTaskCount": 1,
+        "executionNode": "ALL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-proc-source",
+        "maxBackoffPeriod": "10 mins",
+        "name": "Generate Seed",
+        "penaltyDuration": "30 sec",
+        "position": {"x": 0.0, "y": 0.0},
+        "properties": {
+          "File Size": "0B"
+        },
+        "propertyDescriptors": {
+          "File Size": {
+            "displayName": "File Size",
+            "dynamic": false,
+            "identifiesControllerService": false,
+            "name": "File Size",
+            "sensitive": false
+          }
+        },
+        "retriedRelationships": [],
+        "retryCount": 10,
+        "runDurationMillis": 0,
+        "scheduledState": "ENABLED",
+        "schedulingPeriod": "1 min",
+        "schedulingStrategy": "TIMER_DRIVEN",
+        "style": {},
+        "type": "org.apache.nifi.processors.standard.GenerateFlowFile",
+        "yieldDuration": "1 sec"
+      },
+      {
+        "autoTerminatedRelationships": [],
+        "backoffMechanism": "PENALIZE_FLOWFILE",
+        "bulletinLevel": "WARN",
+        "bundle": {
+          "artifact": "nifi-standard-nar",
+          "group": "org.apache.nifi",
+          "version": "2.0.0"
+        },
+        "comments": "",
+        "componentType": "PROCESSOR",
+        "concurrentlySchedulableTaskCount": 1,
+        "executionNode": "ALL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-proc-route",
+        "maxBackoffPeriod": "10 mins",
+        "name": "Weird \"Node\" <x> #1 | [y]",
+        "penaltyDuration": "30 sec",
+        "position": {"x": 220.0, "y": 0.0},
+        "properties": {},
+        "propertyDescriptors": {},
+        "retriedRelationships": [],
+        "retryCount": 10,
+        "runDurationMillis": 0,
+        "scheduledState": "ENABLED",
+        "schedulingPeriod": "0 sec",
+        "schedulingStrategy": "TIMER_DRIVEN",
+        "style": {},
+        "type": "org.apache.nifi.processors.standard.RouteOnAttribute",
+        "yieldDuration": "1 sec"
+      },
+      {
+        "autoTerminatedRelationships": ["success"],
+        "backoffMechanism": "PENALIZE_FLOWFILE",
+        "bulletinLevel": "WARN",
+        "bundle": {
+          "artifact": "nifi-standard-nar",
+          "group": "org.apache.nifi",
+          "version": "2.0.0"
+        },
+        "comments": "",
+        "componentType": "PROCESSOR",
+        "concurrentlySchedulableTaskCount": 1,
+        "executionNode": "ALL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-proc-sink",
+        "maxBackoffPeriod": "10 mins",
+        "name": "Log Result",
+        "penaltyDuration": "30 sec",
+        "position": {"x": 920.0, "y": 140.0},
+        "properties": {},
+        "propertyDescriptors": {},
+        "retriedRelationships": [],
+        "retryCount": 10,
+        "runDurationMillis": 0,
+        "scheduledState": "ENABLED",
+        "schedulingPeriod": "0 sec",
+        "schedulingStrategy": "TIMER_DRIVEN",
+        "style": {},
+        "type": "org.apache.nifi.processors.standard.LogAttribute",
+        "yieldDuration": "1 sec"
+      },
+      {
+        "autoTerminatedRelationships": ["success"],
+        "backoffMechanism": "PENALIZE_FLOWFILE",
+        "bulletinLevel": "WARN",
+        "bundle": {
+          "artifact": "nifi-standard-nar",
+          "group": "org.apache.nifi",
+          "version": "2.0.0"
+        },
+        "comments": "",
+        "componentType": "PROCESSOR",
+        "concurrentlySchedulableTaskCount": 1,
+        "executionNode": "ALL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-proc-archive",
+        "maxBackoffPeriod": "10 mins",
+        "name": "Archive Result",
+        "penaltyDuration": "30 sec",
+        "position": {"x": 920.0, "y": 280.0},
+        "properties": {},
+        "propertyDescriptors": {},
+        "retriedRelationships": [],
+        "retryCount": 10,
+        "runDurationMillis": 0,
+        "scheduledState": "ENABLED",
+        "schedulingPeriod": "0 sec",
+        "schedulingStrategy": "TIMER_DRIVEN",
+        "style": {},
+        "type": "org.apache.nifi.processors.standard.PutFile",
+        "yieldDuration": "1 sec"
+      },
+      {
+        "autoTerminatedRelationships": ["success"],
+        "backoffMechanism": "PENALIZE_FLOWFILE",
+        "bulletinLevel": "WARN",
+        "bundle": {
+          "artifact": "nifi-update-attribute-nar",
+          "group": "org.apache.nifi",
+          "version": "2.0.0"
+        },
+        "comments": "",
+        "componentType": "PROCESSOR",
+        "concurrentlySchedulableTaskCount": 1,
+        "executionNode": "ALL",
+        "groupIdentifier": "graph-root-pg",
+        "identifier": "root-proc-audit",
+        "maxBackoffPeriod": "10 mins",
+        "name": "Audit Trail",
+        "penaltyDuration": "30 sec",
+        "position": {"x": 450.0, "y": 250.0},
+        "properties": {},
+        "propertyDescriptors": {},
+        "retriedRelationships": [],
+        "retryCount": 10,
+        "runDurationMillis": 0,
+        "scheduledState": "ENABLED",
+        "schedulingPeriod": "0 sec",
+        "schedulingStrategy": "TIMER_DRIVEN",
+        "style": {},
+        "type": "org.apache.nifi.processors.attributes.UpdateAttribute",
+        "yieldDuration": "1 sec"
+      }
+    ],
+    "remoteProcessGroups": [],
+    "scheduledState": "ENABLED",
+    "statelessFlowTimeout": "1 min"
+  },
+  "flowEncodingVersion": "1.0",
+  "latest": false,
+  "parameterContexts": {},
+  "parameterProviders": {},
+  "snapshotMetadata": {
+    "author": "test",
+    "flowIdentifier": "flow-graph-connections",
+    "timestamp": 0
+  }
+}

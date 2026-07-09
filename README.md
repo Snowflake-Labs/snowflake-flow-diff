@@ -258,6 +258,28 @@ rules:
 
 All naming rules support the standard `overrides` mechanism to apply different patterns per flow name, and `componentExclusions` to silence violations for specific component UUIDs (where applicable). When a per-flow override specifies `patterns`, it replaces the entire top-level `patterns` map for matching flows rather than merging with it.
 
+## Flow graph
+
+Optionally, in addition to the textual description, the action can render a visual [Mermaid](https://mermaid.js.org/) diagram of the structural changes for each modified process group. This is disabled by default; enable it with the `flow-graph` input:
+
+```yaml
+      - name: Snowflake Flow Diff
+        uses: snowflake-labs/snowflake-flow-diff@v0
+        id: flowdiff
+        with:
+          flowA: ${{ steps.files.outputs.flowA }}
+          flowB: ${{ steps.files.outputs.flowB }}
+          flow-graph: true
+```
+
+When enabled, each process group that has structural changes (components or connections added/removed, or a connection rerouted) gets a collapsible Mermaid `flowchart` showing the affected components and connections:
+
+- 🟩 added, 🟥 removed, 🟧 modified, ⬜ unchanged (context)
+- Node shapes: rectangle = processor, rounded = port, circle = funnel
+- A processor's type is shown under its name as `<Type>`; a port that belongs to a child process group is tagged with `[group name]`
+
+Process groups that only have configuration changes (no structural changes) keep the textual description without a graph. To keep diagrams legible and within GitHub's Mermaid rendering limits, a process group whose graph would be too large falls back to the textual description for that group.
+
 ## JSON Validation
 
 Before computing a diff, the action validates both flow files for duplicate JSON keys. Duplicate keys are not valid JSON and silently produce wrong diffs because parsers apply last-wins on repeated keys, discarding earlier occurrences. This commonly occurs when a merge conflict is not fully resolved.
