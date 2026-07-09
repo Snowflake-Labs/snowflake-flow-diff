@@ -16,6 +16,7 @@
  */
 package com.snowflake.openflow;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import org.apache.nifi.registry.flow.diff.DifferenceType;
 import org.apache.nifi.registry.flow.diff.FlowDifference;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlowDiffTest {
@@ -212,6 +214,54 @@ class FlowDiffTest {
         assertTrue(output.contains("**`TestingFlowDiff`**"), "Root process group header missing");
         // No Parameter Contexts section for this diff (no param context changes)
         assertFalse(output.contains(FlowDiff.PARAMETER_CONTEXTS_SECTION), "Unexpected parameter contexts section");
+    }
+
+    @Test
+    void testDuplicateKeyInFlowBThrowsException() {
+        assertThrows(JsonParseException.class, () ->
+            FlowDiff.getDiff(
+                "src/test/resources/flow_v1_initial.json",
+                "src/test/resources/flow_v9_duplicate_key.json",
+                false, null));
+    }
+
+    @Test
+    void testDuplicateKeyInFlowAThrowsException() {
+        assertThrows(JsonParseException.class, () ->
+            FlowDiff.getDiff(
+                "src/test/resources/flow_v9_duplicate_key.json",
+                "src/test/resources/flow_v1_initial.json",
+                false, null));
+    }
+
+    @Test
+    void testDuplicateKeyReturnsFailureExitCode() throws IOException {
+        final int exitCode = FlowDiff.run(new String[]{
+            "src/test/resources/flow_v1_initial.json",
+            "src/test/resources/flow_v9_duplicate_key.json",
+            "", "", ""
+        });
+        assertEquals(1, exitCode);
+    }
+
+    @Test
+    void testDuplicateKeyOutputContainsCaution() throws IOException {
+        final ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        final PrintStream orig = System.out;
+        System.setOut(new PrintStream(buf, true, StandardCharsets.UTF_8));
+        try {
+            FlowDiff.run(new String[]{
+                "src/test/resources/flow_v1_initial.json",
+                "src/test/resources/flow_v9_duplicate_key.json",
+                "", "", ""
+            });
+        } finally {
+            System.setOut(orig);
+        }
+        final String output = buf.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains("[!CAUTION]"), "CAUTION callout missing");
+        assertTrue(output.contains("duplicate") || output.contains("Duplicate"), "duplicate key message missing");
+        assertTrue(output.contains("flowContents"), "duplicate field name missing");
     }
 
     private static String captureRun(final String before, final String after) throws IOException {

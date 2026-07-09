@@ -258,6 +258,18 @@ rules:
 
 All naming rules support the standard `overrides` mechanism to apply different patterns per flow name, and `componentExclusions` to silence violations for specific component UUIDs (where applicable). When a per-flow override specifies `patterns`, it replaces the entire top-level `patterns` map for matching flows rather than merging with it.
 
+## JSON Validation
+
+Before computing a diff, the action validates both flow files for duplicate JSON keys. Duplicate keys are not valid JSON and silently produce wrong diffs because parsers apply last-wins on repeated keys, discarding earlier occurrences. This commonly occurs when a merge conflict is not fully resolved.
+
+If a duplicate key is detected the action posts a `[!CAUTION]` block in the PR comment identifying the file and the exact line, then exits with a non-zero status code so the PR check is blocked until the file is fixed:
+
+```markdown
+> [!CAUTION]
+> Flow file `submitted-changes/flows/my-flow.json` contains duplicate JSON keys (this typically indicates a merge conflict that was not fully resolved): Duplicate field 'flowContents'
+> Line 37, column 17
+```
+
 ## Example
 
 The GitHub Action will automatically publish a comment on the pull request with a comprehensive description of the changes between the flows of the two branches.
