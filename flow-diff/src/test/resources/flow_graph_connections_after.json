@@ -64,7 +64,7 @@
         "name": "",
         "partitioningAttribute": "",
         "prioritizers": [],
-        "selectedRelationships": ["matched"],
+        "selectedRelationships": ["failure"],
         "source": {
           "comments": "",
           "groupId": "graph-root-pg",

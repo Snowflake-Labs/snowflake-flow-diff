@@ -44,6 +44,18 @@ class FlowGraphTest {
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.DESTINATION_CHANGED)));
         assertTrue(diffs.stream().filter(d -> d.getDifferenceType().equals(DifferenceType.COMPONENT_ADDED)).count() >= 3);
         assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.PROPERTY_CHANGED)));
+        assertTrue(diffs.stream().anyMatch(d -> d.getDifferenceType().equals(DifferenceType.SELECTED_RELATIONSHIPS_CHANGED)));
+    }
+
+    @Test
+    void testSelectedRelationshipsChangedShowsNewRelationshipsInEdgeLabel() throws IOException {
+        final String output = captureRunWithGraph(CONNECTIONS_BEFORE, CONNECTIONS_AFTER, true);
+        final String mermaidBlock = extractMermaidBlockForGroup(output, "GraphFlow");
+
+        // conn-root-route-child-in changed from "matched" to "failure" — the edge label must show the new value
+        assertTrue(mermaidBlock.contains("failure"), "Edge label should show new relationships (failure), not old (matched)");
+        assertFalse(findLineContaining(mermaidBlock, "Child In").contains("matched"),
+                "Edge label to Child In must not show the old 'matched' relationship");
     }
 
     @Test

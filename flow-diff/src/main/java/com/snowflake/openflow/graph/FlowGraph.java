@@ -224,11 +224,20 @@ public class FlowGraph {
         case LOAD_BALANCE_COMPRESSION_CHANGED:
         case FLOWFILE_EXPIRATION_CHANGED:
         case PARTITIONING_ATTRIBUTE_CHANGED:
-        case PRIORITIZERS_CHANGED:
-        case SELECTED_RELATIONSHIPS_CHANGED: {
+        case PRIORITIZERS_CHANGED: {
             final VersionedConnection connection = diff.getComponentA() instanceof VersionedConnection
                     ? (VersionedConnection) diff.getComponentA()
                     : (VersionedConnection) diff.getComponentB();
+            if (connection != null) {
+                addConnectionGraph(connection, GraphState.MODIFIED, collector);
+            }
+            return;
+        }
+        case SELECTED_RELATIONSHIPS_CHANGED: {
+            // Use componentB (new state) so the edge label reflects the updated relationships.
+            final VersionedConnection connection = diff.getComponentB() instanceof VersionedConnection
+                    ? (VersionedConnection) diff.getComponentB()
+                    : (VersionedConnection) diff.getComponentA();
             if (connection != null) {
                 addConnectionGraph(connection, GraphState.MODIFIED, collector);
             }
