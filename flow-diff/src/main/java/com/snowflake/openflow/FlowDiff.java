@@ -277,7 +277,7 @@ public class FlowDiff {
                             System.out.println("- Graph omitted (too large to render).");
                         } else {
                             System.out.println("");
-                            System.out.println("<details>");
+                            System.out.println("<details open>");
                             System.out.println("<summary>Flow graph</summary>");
                             System.out.println("");
                             System.out.println("```mermaid");
