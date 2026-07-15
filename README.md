@@ -72,6 +72,17 @@ jobs:
 
 Note - you may want to change `grep  '\.json$'` with a more specific pattern to match your specific requirements.
 
+## Docker Image
+
+Each release also publishes a Docker image to the [GitHub Container Registry](https://github.com/snowflake-labs/snowflake-flow-diff/pkgs/container/snowflake-flow-diff). This is useful when you want to run the tool directly — for example in a GitLab CI pipeline or locally — without relying on the GitHub Action wrapper.
+
+```
+ghcr.io/snowflake-labs/snowflake-flow-diff:latest
+ghcr.io/snowflake-labs/snowflake-flow-diff:v0.0.24
+```
+
+The image entrypoint accepts the same positional arguments as the action inputs, in this order: `flowA`, `flowB`, `token`, `repository`, `issuenumber`, `checkstyle`, `checkstyle-rules`, `checkstyle-fail`, `api-url`, `flow-graph`.
+
 ## GitHub Enterprise Server
 
 This action works with GitHub Enterprise Server (GHE) out of the box. The GitHub API URL is automatically detected via `github.api_url`. If you need to override it for any reason, you can explicitly set the `api-url` input:
