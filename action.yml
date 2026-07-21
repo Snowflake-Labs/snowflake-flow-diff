@@ -53,6 +53,10 @@ inputs:
     description: 'GitHub API URL (automatically set for GitHub Enterprise Server)'
     required: false
     default: ${{ github.api_url }}
+  flow-graph:
+    description: 'Emit per-process-group Mermaid diff graphs in the comment'
+    required: false
+    default: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -66,3 +70,4 @@ runs:
     - ${{ inputs.checkstyle-rules }}
     - ${{ inputs.checkstyle-fail }}
     - ${{ inputs.api-url }}
+    - ${{ inputs.flow-graph }}

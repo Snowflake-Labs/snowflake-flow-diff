@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig;
+import com.snowflake.openflow.graph.FlowGraph;
 import com.snowflake.openflow.github.GitHubClient;
 import org.apache.nifi.flow.Bundle;
 import org.apache.nifi.flow.ComponentType;
@@ -32,9 +33,11 @@ import org.apache.nifi.flow.VersionedConfigurableExtension;
 import org.apache.nifi.flow.VersionedConnection;
 import org.apache.nifi.flow.VersionedControllerService;
 import org.apache.nifi.flow.VersionedFlowCoordinates;
+import org.apache.nifi.flow.VersionedFunnel;
 import org.apache.nifi.flow.VersionedLabel;
 import org.apache.nifi.flow.VersionedParameter;
 import org.apache.nifi.flow.VersionedParameterContext;
+import org.apache.nifi.flow.VersionedPort;
 import org.apache.nifi.flow.VersionedProcessGroup;
 import org.apache.nifi.flow.VersionedProcessor;
 import org.apache.nifi.flow.VersionedPropertyDescriptor;
@@ -57,11 +60,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 
@@ -76,6 +79,8 @@ public class FlowDiff {
     private static Map<String, VersionedProcessGroup> processGroups;
     private static List<String> checkstyleViolations;
     private static boolean jsonParseError;
+    private static boolean flowGraphEnabled;
+    private static FlowGraph flowGraph;
 
     public static void main(String[] args) throws IOException {
         final int exitCode = run(args);
@@ -93,6 +98,7 @@ public class FlowDiff {
         // args[6] = checkstyle-rules
         // args[7] = checkstyle-fail
         // args[8] = api-url
+        // args[9] = flow-graph
 
         final List<String> pathsA = List.of(args[0].split(",")).stream().map(String::trim).toList();
         final List<String> pathsB = List.of(args[1].split(",")).stream().map(String::trim).toList();
@@ -112,6 +118,9 @@ public class FlowDiff {
                 ? Boolean.parseBoolean(args[7])
                 : false;
         final String githubApiUrl = args.length > 8 && args[8] != null && !args[8].isEmpty() ? args[8] : null;
+        flowGraphEnabled = args.length > 9 && args[9] != null && !args[9].isEmpty()
+                ? Boolean.parseBoolean(args[9])
+                : false;
 
         // Capture output to a string if we need to post to GitHub
         final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
@@ -132,6 +141,10 @@ public class FlowDiff {
                 return RETURN_FAILURE;
             } else {
                 System.out.println("Identified " + pathsA.size() + " changed flows in this Pull Request.");
+                if (flowGraphEnabled) {
+                    System.out.println("");
+                    System.out.println(FlowGraph.LEGEND);
+                }
             }
 
             boolean hasBlockingCheckstyleViolations = false;
@@ -143,6 +156,7 @@ public class FlowDiff {
                 flowName = "";
                 parameterContexts = new HashMap<>();
                 processGroups = new HashMap<>();
+                flowGraph = null;
                 jsonParseError = false;
 
                 final boolean flowHasCheckstyleViolations = executeFlowDiffForOneFlow(pathsA.get(i), pathsB.get(i), checkstyleEnabled, rulesConfig);
@@ -198,7 +212,7 @@ public class FlowDiff {
             System.out.println("");
             return false;
         }
-        final Set<String> bundleChanges = new HashSet<>();
+        final Set<String> bundleChanges = new TreeSet<>();
         boolean flowHasCheckstyleViolations = false;
 
         System.out.println("### Executing Snowflake Flow Diff for flow: " + flowName);
@@ -221,6 +235,7 @@ public class FlowDiff {
 
             // Phase 1: collect bundle changes and group remaining diffs by process group path
             final Map<String, List<FlowDifference>> groupedDiffs = new LinkedHashMap<>();
+            final Map<String, String> pathToGroupId = new HashMap<>();
             for (FlowDifference diff : diffs) {
                 switch (diff.getDifferenceType()) {
                 case BUNDLE_CHANGED:
@@ -235,7 +250,9 @@ public class FlowDiff {
                     // no need to print these, they are not relevant for the user
                     break;
                 default:
-                    groupedDiffs.computeIfAbsent(getGroupPathForDiff(diff), k -> new ArrayList<>()).add(diff);
+                    final String groupPath = getGroupPathForDiff(diff);
+                    groupedDiffs.computeIfAbsent(groupPath, k -> new ArrayList<>()).add(diff);
+                    pathToGroupId.putIfAbsent(groupPath, getGroupIdForDiff(diff));
                 }
             }
 
@@ -252,6 +269,29 @@ public class FlowDiff {
                 final int count = groupDiffs.size();
                 System.out.println("");
                 System.out.println("**`" + groupPath + "`** \u2014 " + count + (count == 1 ? " change" : " changes"));
+
+                if (flowGraphEnabled) {
+                    final FlowGraph.GraphRender graph = flowGraph == null ? null : flowGraph.render(groupDiffs, pathToGroupId.get(groupPath));
+                    if (graph != null) {
+                        if (graph.omitted()) {
+                            System.out.println("- Graph omitted (too large to render).");
+                        } else {
+                            System.out.println("");
+                            System.out.println("<details open>");
+                            System.out.println("<summary>Flow graph</summary>");
+                            System.out.println("");
+                            System.out.println("```mermaid");
+                            System.out.print(graph.mermaid());
+                            if (!graph.mermaid().endsWith("\n")) {
+                                System.out.println("");
+                            }
+                            System.out.println("```");
+                            System.out.println("");
+                            System.out.println("</details>");
+                            System.out.println("");
+                        }
+                    }
+                }
 
                 for (FlowDifference diff : groupDiffs) {
 
@@ -638,14 +678,20 @@ public class FlowDiff {
 
         processGroups = new HashMap<>();
         // Register A's groups first so B can overwrite — B takes display-name priority
+        VersionedProcessGroup rootPGA = null;
         if (snapshotA != null) {
-            final VersionedProcessGroup rootPGA = snapshotA.getFlowSnapshot().getFlowContents();
+            rootPGA = snapshotA.getFlowSnapshot().getFlowContents();
             processGroups.put(rootPGA.getIdentifier(), rootPGA);
             registerProcessGroups(rootPGA);
         }
-        VersionedProcessGroup rootPG = snapshotB.getFlowSnapshot().getFlowContents();
+        final VersionedProcessGroup rootPG = snapshotB.getFlowSnapshot().getFlowContents();
         processGroups.put(rootPG.getIdentifier(), rootPG);
         registerProcessGroups(rootPG);
+        if (flowGraphEnabled) {
+            flowGraph = FlowGraph.forFlow(rootPGA, rootPG);
+        } else {
+            flowGraph = null;
+        }
 
         String plainFlowName = "";
         if (snapshotA != null && snapshotA.getFlowSnapshot().getFlow() != null) {
@@ -699,17 +745,24 @@ public class FlowDiff {
 
         parameterContexts = snapshotB.getFlowSnapshot().getParameterContexts();
 
-        final SortedSet<FlowDifference> sortedDiffs = new TreeSet(new Comparator<FlowDifference>() {
-            @Override
-            public int compare(FlowDifference o1, FlowDifference o2) {
-                String id1 = o1.getComponentA() == null ? String.valueOf(o1.hashCode()) : o1.getComponentA().getInstanceIdentifier() + o1.hashCode();
-                String id2 = o2.getComponentA() == null ? String.valueOf(o2.hashCode()) : o2.getComponentA().getInstanceIdentifier() + o2.hashCode();
-                return (id1 == null ? String.valueOf(o1.hashCode()) : id1).compareTo(id2 == null ? String.valueOf(o2.hashCode()) : id2);
-            }
-        });
-        sortedDiffs.addAll(flowComparator.compare().getDifferences());
+        // Deterministic, build-stable ordering. The previous comparator appended the JVM identity
+        // hashCode as a tiebreaker, which reordered the output on any unrelated code change. Order by
+        // stable content instead so the same diff always renders identically.
+        final List<FlowDifference> orderedDiffs = new ArrayList<>(flowComparator.compare().getDifferences());
+        orderedDiffs.sort(Comparator
+                .comparing((FlowDifference d) -> instanceIdOrEmpty(d.getComponentA()))
+                .thenComparing(d -> d.getDifferenceType() == null ? "" : d.getDifferenceType().name())
+                .thenComparing(d -> d.getFieldName() == null ? "" : d.getFieldName().orElse(""))
+                .thenComparing(d -> instanceIdOrEmpty(d.getComponentB()))
+                .thenComparing(d -> String.valueOf(d.getValueA()))
+                .thenComparing(d -> String.valueOf(d.getValueB()))
+                .thenComparing(d -> d.getDescription() == null ? "" : d.getDescription()));
 
-        return sortedDiffs;
+        return new LinkedHashSet<>(orderedDiffs);
+    }
+
+    private static String instanceIdOrEmpty(final VersionedComponent component) {
+        return component == null || component.getInstanceIdentifier() == null ? "" : component.getInstanceIdentifier();
     }
 
     private static void registerProcessGroups(final VersionedProcessGroup rootPG) {
@@ -758,6 +811,21 @@ public class FlowDiff {
             return buildProcessGroupPath(component.getIdentifier());
         }
         return groupId != null ? buildProcessGroupPath(groupId) : buildProcessGroupPath(component.getIdentifier());
+    }
+
+    static String getGroupIdForDiff(final FlowDifference diff) {
+        final VersionedComponent component = diff.getComponentA() != null ? diff.getComponentA() : diff.getComponentB();
+        if (component == null) {
+            return null;
+        }
+        if (component instanceof VersionedParameterContext) {
+            return null;
+        }
+        if (component instanceof VersionedProcessGroup) {
+            return component.getIdentifier();
+        }
+        final String groupId = component.getGroupIdentifier();
+        return groupId != null ? groupId : component.getIdentifier();
     }
 
     private static void sanitizeProcessGroup(final VersionedProcessGroup group) {
