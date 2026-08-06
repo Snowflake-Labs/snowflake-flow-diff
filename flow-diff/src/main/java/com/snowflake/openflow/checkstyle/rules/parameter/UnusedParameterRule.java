@@ -35,9 +35,12 @@ import java.util.Map;
 public class UnusedParameterRule implements CheckstyleRule {
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
         final List<String> violations = new ArrayList<>();
-        final List<VersionedParameter> parameters = container.getFlowSnapshot()
+        final List<VersionedParameter> parameters = currentFlowSnapshotContainer.getFlowSnapshot()
                 .getParameterContexts()
                 .values()
                 .stream()
@@ -45,7 +48,7 @@ public class UnusedParameterRule implements CheckstyleRule {
                 .toList();
 
         for (VersionedParameter parameter : parameters) {
-            if (!isParameterReferenced(container, parameter.getName())) {
+            if (!isParameterReferenced(currentFlowSnapshotContainer, parameter.getName())) {
                 violations.add("Parameter named `" + parameter.getName() + "` is not used anywhere in the flow");
             }
         }

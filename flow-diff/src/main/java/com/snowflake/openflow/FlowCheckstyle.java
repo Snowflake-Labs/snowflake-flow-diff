@@ -29,7 +29,16 @@ public class FlowCheckstyle {
 
     public static final List<String> DEFAULT_CHECKSTYLE_RULES = Arrays.stream(DefaultCheckstyleRules.values()).map(DefaultCheckstyleRules::id).toList();
 
-    public static List<String> getCheckstyleViolations(final FlowSnapshotContainer flowSnapshotContainer, final String flowName, final CheckstyleRulesConfig config) {
+    public static List<String> getCheckstyleViolations(final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final CheckstyleRulesConfig config) {
+        return getCheckstyleViolations(null, currentFlowSnapshotContainer, flowName, config);
+    }
+
+    public static List<String> getCheckstyleViolations(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final CheckstyleRulesConfig config) {
         final List<String> violations = new ArrayList<>();
         final List<String> includes = config == null || config.include() == null ? DEFAULT_CHECKSTYLE_RULES : config.include();
         final List<String> excludes = config == null || config.exclude() == null || config.include() != null ? List.of() : config.exclude();
@@ -38,7 +47,7 @@ public class FlowCheckstyle {
                 .filter(rule -> rule.ruleApplies(includes, excludes, config, flowName))
                 .forEach(rule -> {
                     final RuleConfig ruleConfig = config == null || config.rules() == null ? null : config.rules().get(rule.id());
-                    violations.addAll(rule.implementation().check(flowSnapshotContainer, flowName, ruleConfig));
+                    violations.addAll(rule.implementation().check(previousFlowSnapshotContainer, currentFlowSnapshotContainer, flowName, ruleConfig));
                 });
 
         return violations;

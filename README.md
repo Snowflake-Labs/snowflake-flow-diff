@@ -143,7 +143,7 @@ At the root level, if `include` is specified, only those rules will be executed.
 
 ### Component-level exclusions
 
-Some rules (for example `concurrentTasks`, `noSelfLoop`, `enforcePrioritizer`, or `backpressureThreshold`) may need an exception for a single processor or connection while you keep the rule enabled for the rest of the flow. You can scope exclusions down to the UUID under the `componentExclusions` map, keyed by flow-name regular expressions:
+Some rules (for example `concurrentTasks`, `noSelfLoop`, `enforcePrioritizer`, `backpressureThreshold`, or `removedConnection`) may need an exception for a single processor or connection while you keep the rule enabled for the rest of the flow. You can scope exclusions down to the UUID under the `componentExclusions` map, keyed by flow-name regular expressions:
 
 ```yaml
 include:
@@ -158,7 +158,7 @@ rules:
 ```
 
 When the flow name matches the regex, violations produced for the listed component IDs are ignored, while all other components continue to be checked normally.
-Use the same pattern for rules that operate on connections (for example `enforcePrioritizer` or `backpressureThreshold`) by listing the connection identifiers to suppress.
+Use the same pattern for rules that operate on connections (for example `enforcePrioritizer`, `backpressureThreshold`, or `removedConnection`) by listing the connection identifiers to suppress. For `removedConnection`, use the identifier from the previous flow version because the connection no longer exists in the new version.
 
 ### Rule identifiers and exclusion targets
 
@@ -174,6 +174,7 @@ The following table summarizes what each rule reports and which identifiers you 
 | `noSelfLoop` | Component name/type and UUID | Processor/Funnel UUID at both ends of the self-loop |
 | `enforcePrioritizer` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
 | `backpressureThreshold` | Connection description and UUID | Connection UUID (`VersionedConnection#getIdentifier`) |
+| `removedConnection` | Previous-version connection source, destination, name or relationships, and UUID | Previous-version connection UUID (`VersionedConnection#getIdentifier`) |
 | `processorNaming` | Processor name, type, and UUID | Processor UUID (`VersionedProcessor#getIdentifier`) |
 | `controllerServiceNaming` | Controller Service name, type, and UUID | Controller Service UUID (`VersionedControllerService#getIdentifier`) |
 | `parameterContextNaming` | Parameter Context name | _Not applicable_ |
@@ -188,6 +189,7 @@ Available rules:
 - `noSelfLoop` to check if there are self-loop connections in the flow
 - `enforcePrioritizer` to check if all connections in the flow are set with the configured list of prioritizers (parameter: `prioritizers`, comma-separated list of expected prioritizers, example: `org.apache.nifi.prioritizer.FirstInFirstOutPrioritizer`)
 - `backpressureThreshold` to ensure each connection keeps both data size and object count backpressure thresholds greater than zero
+- `removedConnection` to report every connection UUID present in the previous flow version and absent from the current flow version, including connections removed with deleted process groups and delete/redraw replacements. Like the other built-in rules, it is enabled by default when checkstyle runs without an explicit `include` list. `componentExclusions` for this rule use the previous-version connection UUID because the connection no longer exists in the new version.
 - `processorNaming` to validate processor names against regex patterns based on processor type (parameters: `patterns` map of fully qualified type to regex, optional `defaultPattern` for types not in the map). This rule produces no violations when no patterns are configured.
 - `controllerServiceNaming` to validate controller service names against regex patterns based on service type (parameters: `patterns` map of fully qualified type to regex, optional `defaultPattern` for types not in the map). This rule produces no violations when no patterns are configured.
 - `parameterContextNaming` to validate parameter context names against a regex pattern (parameters: `defaultPattern` regex, optional `exclude` list of exact names to skip). This rule produces no violations when no pattern is configured.

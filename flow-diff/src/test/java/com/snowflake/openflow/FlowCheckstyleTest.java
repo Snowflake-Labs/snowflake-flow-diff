@@ -22,15 +22,22 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig;
 import com.snowflake.openflow.checkstyle.CheckstyleRulesConfig.RuleConfig;
+import com.snowflake.openflow.checkstyle.DefaultCheckstyleRules;
+import org.apache.nifi.flow.ConnectableComponent;
+import org.apache.nifi.flow.VersionedConnection;
 import org.apache.nifi.registry.flow.FlowSnapshotContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -360,5 +367,255 @@ class FlowCheckstyleTest {
 
         config = new CheckstyleRulesConfig(List.of("parameterProviderNaming"), null, null);
         assertEquals(0, FlowCheckstyle.getCheckstyleViolations(container, container.getFlowSnapshot().getFlow().getName(), config).size());
+    }
+
+    @Test
+    void testRemovedConnectionViolationUsesRelationshipFallback() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.get(0).contains("removed-connection-root-001"));
+        assertTrue(violations.get(0).contains("GenerateFlowFile"));
+        assertTrue(violations.get(0).contains("UpdateAttribute"));
+        assertTrue(violations.get(0).contains("[success]"));
+    }
+
+    @Test
+    void testRemovedConnectionViolationUsesPreviousConnectionName() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        onlyRootConnection(previous).setName("critical-path");
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.get(0).contains("critical-path"));
+        assertTrue(violations.get(0).contains("removed-connection-root-001"));
+        assertTrue(violations.get(0).contains("GenerateFlowFile"));
+        assertTrue(violations.get(0).contains("UpdateAttribute"));
+        assertFalse(violations.get(0).contains("[success]"));
+    }
+
+    @Test
+    void testRemovedConnectionViolationUsesEmptyRelationshipFallbackWhenRelationshipsAreNull() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        onlyRootConnection(previous).setSelectedRelationships(null);
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.get(0).contains("[]"));
+        assertFalse(violations.get(0).contains("null"));
+    }
+
+    @Test
+    void testRemovedConnectionViolationForMultipleNestedAndDeletedGroupRemovals() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v11_removed_connections_nested_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v11_removed_connections_nested_after.json");
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionNestedFlow", removedConnectionConfig());
+
+        assertEquals(3, violations.size());
+        assertEquals(1, countViolationsContaining(violations, "root-removed-connection-001"));
+        assertEquals(1, countViolationsContaining(violations, "nested-removed-connection-001"));
+        assertEquals(1, countViolationsContaining(violations, "deleted-group-removed-connection-001"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresNullPreviousSnapshot() throws IOException {
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(null, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresRetainedAndAddedConnections() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer retainedCurrent = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer additionCurrent = loadFlow("flow_v10_removed_connection_before.json");
+
+        final List<String> retainedViolations = FlowCheckstyle.getCheckstyleViolations(previous, retainedCurrent, "RemovedConnectionFlow", removedConnectionConfig());
+        assertEquals(0, retainedViolations.size());
+
+        final VersionedConnection existingConnection = onlyRootConnection(additionCurrent);
+        final Set<VersionedConnection> currentConnections = new LinkedHashSet<>(additionCurrent.getFlowSnapshot().getFlowContents().getConnections());
+        currentConnections.add(createConnection(
+                "added-connection-001",
+                "new-path",
+                Set.of("failure"),
+                existingConnection.getSource(),
+                existingConnection.getDestination()));
+        additionCurrent.getFlowSnapshot().getFlowContents().setConnections(currentConnections);
+
+        final List<String> additionViolations = FlowCheckstyle.getCheckstyleViolations(previous, additionCurrent, "RemovedConnectionFlow", removedConnectionConfig());
+        assertEquals(0, additionViolations.size());
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresSameUuidSourceIdChanges() throws IOException {
+        assertNoRemovedConnectionViolationForSameUuidChange(connection -> connection.getSource().setId("replacement-source-001"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresSameUuidDestinationIdChanges() throws IOException {
+        assertNoRemovedConnectionViolationForSameUuidChange(connection -> connection.getDestination().setId("replacement-destination-001"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresSameUuidConnectionNameChanges() throws IOException {
+        assertNoRemovedConnectionViolationForSameUuidChange(connection -> connection.setName("renamed-connection"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleIgnoresSameUuidRelationshipChanges() throws IOException {
+        assertNoRemovedConnectionViolationForSameUuidChange(connection -> connection.setSelectedRelationships(new LinkedHashSet<>(Set.of("retry"))));
+    }
+
+    @Test
+    void testRemovedConnectionRuleReportsDeleteAndRedrawWithNewUuid() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_before.json");
+
+        final VersionedConnection currentConnection = onlyRootConnection(current);
+        current.getFlowSnapshot().getFlowContents().setConnections(new LinkedHashSet<>(Set.of(createConnection(
+                "replacement-connection-001",
+                currentConnection.getName(),
+                currentConnection.getSelectedRelationships(),
+                currentConnection.getSource(),
+                currentConnection.getDestination()))));
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(1, violations.size());
+        assertTrue(violations.get(0).contains("removed-connection-root-001"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleComponentExclusionUsesPreviousUuid() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_removed_connection_component_exclusion.yaml");
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", config);
+
+        assertEquals(0, violations.size());
+    }
+
+    @Test
+    void testRemovedConnectionRuleRegistrationAndGlobalActivationControls() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        assertEquals(DefaultCheckstyleRules.REMOVED_CONNECTION, DefaultCheckstyleRules.fromId("removedConnection"));
+        assertTrue(FlowCheckstyle.DEFAULT_CHECKSTYLE_RULES.contains("removedConnection"));
+
+        final List<String> defaultViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", null);
+        assertEquals(1, countViolationsContaining(defaultViolations, "removed-connection-root-001"));
+
+        final List<String> includedViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+        assertEquals(1, countViolationsContaining(includedViolations, "removed-connection-root-001"));
+
+        final CheckstyleRulesConfig excludedConfig = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_removed_connection_global_exclude.yaml");
+        final List<String> excludedViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", excludedConfig);
+        assertEquals(0, countViolationsContaining(excludedViolations, "removed-connection-root-001"));
+    }
+
+    @Test
+    void testRemovedConnectionRuleFlowNameExclusionMatchesOnlyConfiguredFlows() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+        final CheckstyleRulesConfig config = CheckstyleRulesConfig.fromFile("src/test/resources/checkstyle_removed_connection_flow_exclude.yaml");
+
+        final List<String> excludedViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "Prod Removed Flow", config);
+        assertEquals(0, excludedViolations.size());
+
+        final List<String> includedViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "Dev Removed Flow", config);
+        assertEquals(1, includedViolations.size());
+        assertTrue(includedViolations.get(0).contains("removed-connection-root-001"));
+    }
+
+    @Test
+    void testExistingRulesReturnSameViolationsThroughThreeAndFourArgumentApis() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v6_parameter_value.json");
+        final CheckstyleRulesConfig config = new CheckstyleRulesConfig(List.of("noSelfLoop"), null, null);
+
+        final List<String> threeArgumentViolations = FlowCheckstyle.getCheckstyleViolations(current, current.getFlowSnapshot().getFlow().getName(), config);
+        final List<String> fourArgumentViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, current.getFlowSnapshot().getFlow().getName(), config);
+
+        assertEquals(threeArgumentViolations, fourArgumentViolations);
+        assertEquals(1, fourArgumentViolations.size());
+        assertTrue(fourArgumentViolations.get(0).contains("UpdateAttribute"));
+    }
+
+    @Test
+    void testThreeArgumentCheckstyleOverloadDoesNotReportRemovedConnectionViolations() throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_after.json");
+
+        final List<String> fourArgumentViolations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+        assertEquals(1, fourArgumentViolations.size());
+        assertTrue(fourArgumentViolations.get(0).contains("removed-connection-root-001"));
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(0, violations.size());
+    }
+
+    private static FlowSnapshotContainer loadFlow(final String resource) throws IOException {
+        return FlowDiff.getFlowContainer("src/test/resources/" + resource, jsonFactory);
+    }
+
+    private static CheckstyleRulesConfig removedConnectionConfig() {
+        return new CheckstyleRulesConfig(List.of("removedConnection"), null, null);
+    }
+
+    private static VersionedConnection onlyRootConnection(final FlowSnapshotContainer container) {
+        return container.getFlowSnapshot().getFlowContents().getConnections().iterator().next();
+    }
+
+    private static void assertNoRemovedConnectionViolationForSameUuidChange(final Consumer<VersionedConnection> currentMutation) throws IOException {
+        final FlowSnapshotContainer previous = loadFlow("flow_v10_removed_connection_before.json");
+        final FlowSnapshotContainer current = loadFlow("flow_v10_removed_connection_before.json");
+
+        currentMutation.accept(onlyRootConnection(current));
+
+        final List<String> violations = FlowCheckstyle.getCheckstyleViolations(previous, current, "RemovedConnectionFlow", removedConnectionConfig());
+
+        assertEquals(0, violations.size());
+    }
+
+    private static int countViolationsContaining(final List<String> violations, final String expectedFragment) {
+        return (int) violations.stream().filter(violation -> violation.contains(expectedFragment)).count();
+    }
+
+    private static VersionedConnection createConnection(final String identifier,
+            final String name,
+            final Set<String> selectedRelationships,
+            final ConnectableComponent source,
+            final ConnectableComponent destination) {
+        final VersionedConnection connection = new VersionedConnection();
+        connection.setIdentifier(identifier);
+        connection.setGroupIdentifier(source.getGroupId());
+        connection.setName(name);
+        connection.setSelectedRelationships(new LinkedHashSet<>(selectedRelationships));
+        connection.setSource(source);
+        connection.setDestination(destination);
+        connection.setBackPressureDataSizeThreshold("1 GB");
+        connection.setBackPressureObjectThreshold(10000L);
+        connection.setFlowFileExpiration("0 sec");
+        connection.setPrioritizers(List.of());
+        connection.setLoadBalanceStrategy("DO_NOT_LOAD_BALANCE");
+        connection.setPartitioningAttribute("");
+        connection.setLoadBalanceCompression("DO_NOT_COMPRESS");
+        return connection;
     }
 }

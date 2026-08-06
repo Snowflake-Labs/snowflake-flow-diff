@@ -34,8 +34,11 @@ public class EnforcePrioritizer implements CheckstyleRule {
     private final static String PARAMETER_NAME = "prioritizers";
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
-        final VersionedProcessGroup rootProcessGroup = container.getFlowSnapshot().getFlowContents();
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
+        final VersionedProcessGroup rootProcessGroup = currentFlowSnapshotContainer.getFlowSnapshot().getFlowContents();
 
         String prioritizersString = null;
 

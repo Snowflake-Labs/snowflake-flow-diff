@@ -657,7 +657,7 @@ public class FlowDiff {
         flowName = plainFlowName.isEmpty() ? "Unnamed Flow" : "`" + plainFlowName + "`";
 
         if (checkstyleEnabled) {
-            checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(snapshotB, plainFlowName, rulesConfig);
+            checkstyleViolations = FlowCheckstyle.getCheckstyleViolations(snapshotA, snapshotB, plainFlowName, rulesConfig);
         }
 
         if (noOriginalFlow) {

@@ -30,14 +30,17 @@ public class ParameterContextNamingRule extends AbstractNamingRule {
     private static final String EXCLUDE_KEY = "exclude";
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
         final String defaultPattern = getDefaultPattern(config, flowName);
         if (defaultPattern == null) {
             return List.of();
         }
 
         final List<String> excludeNames = getExcludeNames(config, flowName);
-        final Map<String, VersionedParameterContext> parameterContexts = container.getFlowSnapshot().getParameterContexts();
+        final Map<String, VersionedParameterContext> parameterContexts = currentFlowSnapshotContainer.getFlowSnapshot().getParameterContexts();
         if (parameterContexts == null || parameterContexts.isEmpty()) {
             return List.of();
         }

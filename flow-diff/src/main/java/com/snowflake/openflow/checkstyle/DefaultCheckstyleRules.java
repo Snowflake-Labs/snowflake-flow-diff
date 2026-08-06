@@ -21,6 +21,7 @@ import com.snowflake.openflow.checkstyle.rules.BackpressureThresholdRule;
 import com.snowflake.openflow.checkstyle.rules.ConcurrentTasksRule;
 import com.snowflake.openflow.checkstyle.rules.EnforcePrioritizer;
 import com.snowflake.openflow.checkstyle.rules.NoSelfLoopRule;
+import com.snowflake.openflow.checkstyle.rules.RemovedConnectionRule;
 import com.snowflake.openflow.checkstyle.rules.SnapshotMetadataRule;
 import com.snowflake.openflow.checkstyle.rules.naming.ControllerServiceNamingRule;
 import com.snowflake.openflow.checkstyle.rules.naming.ParameterContextNamingRule;
@@ -39,6 +40,7 @@ public enum DefaultCheckstyleRules {
     EMPTY_PARAMETER("emptyParameter", new EmptyParameterRule()),
     DEFAULT_PARAMETERS("defaultParameters", new DefaultParameterRule()),
     UNUSED_PARAMETER("unusedParameter", new UnusedParameterRule()),
+    REMOVED_CONNECTION("removedConnection", new RemovedConnectionRule()),
     NO_SELF_LOOP("noSelfLoop", new NoSelfLoopRule()),
     ENFORCE_PRIORITIZER("enforcePrioritizer", new EnforcePrioritizer()),
     BACKPRESSURE_THRESHOLD("backpressureThreshold", new BackpressureThresholdRule()),

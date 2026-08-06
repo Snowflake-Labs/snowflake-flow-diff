@@ -264,12 +264,34 @@ class FlowDiffTest {
         assertTrue(output.contains("flowContents"), "duplicate field name missing");
     }
 
+    @Test
+    void testRemovedConnectionCheckstyleOutputRespectsEnablement() throws IOException {
+        final String enabledOutput = captureRun(
+                "src/test/resources/flow_v10_removed_connection_before.json",
+                "src/test/resources/flow_v10_removed_connection_after.json",
+                true);
+        assertTrue(enabledOutput.contains("#### Checkstyle Violations"));
+        assertTrue(enabledOutput.contains("removed-connection-root-001"));
+
+        final String disabledOutput = captureRun(
+                "src/test/resources/flow_v10_removed_connection_before.json",
+                "src/test/resources/flow_v10_removed_connection_after.json",
+                false);
+        assertFalse(disabledOutput.contains("#### Checkstyle Violations"));
+        assertFalse(disabledOutput.contains("#### No Checkstyle Violations found"));
+        assertTrue(disabledOutput.contains("#### Flow Changes"));
+    }
+
     private static String captureRun(final String before, final String after) throws IOException {
+        return captureRun(before, after, false);
+    }
+
+    private static String captureRun(final String before, final String after, final boolean checkstyleEnabled) throws IOException {
         final ByteArrayOutputStream buf = new ByteArrayOutputStream();
         final PrintStream orig = System.out;
         System.setOut(new PrintStream(buf, true, StandardCharsets.UTF_8));
         try {
-            FlowDiff.run(new String[]{before, after, "", "", ""});
+            FlowDiff.run(new String[]{before, after, "", "", "", Boolean.toString(checkstyleEnabled)});
         } finally {
             System.setOut(orig);
         }

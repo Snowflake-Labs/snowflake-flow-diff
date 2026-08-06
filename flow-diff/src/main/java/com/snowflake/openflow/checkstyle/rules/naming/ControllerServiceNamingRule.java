@@ -28,8 +28,11 @@ import java.util.Map;
 public class ControllerServiceNamingRule extends AbstractNamingRule {
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
-        final VersionedProcessGroup rootProcessGroup = container.getFlowSnapshot().getFlowContents();
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
+        final VersionedProcessGroup rootProcessGroup = currentFlowSnapshotContainer.getFlowSnapshot().getFlowContents();
         return checkControllerServiceNaming(rootProcessGroup, config, flowName);
     }
 

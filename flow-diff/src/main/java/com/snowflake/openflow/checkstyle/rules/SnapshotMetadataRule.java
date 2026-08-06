@@ -26,9 +26,12 @@ import java.util.List;
 public class SnapshotMetadataRule implements CheckstyleRule {
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
         final List<String> violations = new ArrayList<>();
-        if (container.getFlowSnapshot().getSnapshotMetadata() == null) {
+        if (currentFlowSnapshotContainer.getFlowSnapshot().getSnapshotMetadata() == null) {
             violations.add("Flow snapshot metadata is missing");
         }
         return violations;
