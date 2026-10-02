@@ -20,11 +20,14 @@ import com.fasterxml.jackson.core.JsonParseException;
 import org.apache.nifi.registry.flow.diff.DifferenceType;
 import org.apache.nifi.registry.flow.diff.FlowDifference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,6 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FlowDiffTest {
+
+    @TempDir
+    Path tempDir;
 
     @Test
     void testDiffV1V2() throws IOException {
@@ -214,6 +220,24 @@ class FlowDiffTest {
         assertTrue(output.contains("**`TestingFlowDiff`**"), "Root process group header missing");
         // No Parameter Contexts section for this diff (no param context changes)
         assertFalse(output.contains(FlowDiff.PARAMETER_CONTEXTS_SECTION), "Unexpected parameter contexts section");
+    }
+
+    @Test
+    void testSourceChangedUsesComponentNames() throws IOException {
+        final Path updatedFlow = tempDir.resolve("flow_source_changed.json");
+        final String originalFlow = Files.readString(Path.of("src/test/resources/flow_v1_initial.json"));
+        final String sourceChangedFlow = originalFlow.replace(
+                "\"id\" : \"50a3b081-d54d-3ad8-b74c-caa7fef59bb2\",\n        \"name\" : \"GenerateFlowFile\",",
+                "\"id\" : \"33eb1dae-38c6-3540-a286-7a364054cf4c\",\n        \"name\" : \"UpdateAttribute\",");
+        Files.writeString(updatedFlow, sourceChangedFlow);
+
+        final String output = captureRun("src/test/resources/flow_v1_initial.json", updatedFlow.toString());
+
+        assertTrue(output.contains("- The source of the connection `[success]` to `UpdateAttribute` has changed from "
+                + "`GenerateFlowFile` to `UpdateAttribute`"));
+        assertFalse(output.contains("(SOURCE_CHANGED)"));
+        assertFalse(output.contains("org.apache.nifi.flow.VersionedConnection@"));
+        assertFalse(output.contains("Optional.empty"));
     }
 
     @Test

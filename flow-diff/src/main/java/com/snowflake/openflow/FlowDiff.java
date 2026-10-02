@@ -350,6 +350,16 @@ public class FlowDiff {
                             + "` to `" + ((ConnectableComponent) diff.getValueB()).getName() + "`");
                     break;
                 }
+                case SOURCE_CHANGED: {
+                    final VersionedConnection connectionBefore = (VersionedConnection) diff.getComponentA();
+                    final VersionedConnection connectionAfter = (VersionedConnection) diff.getComponentB();
+                    System.out.println("- The source of the connection `"
+                            + (isEmpty(connectionAfter.getName()) ? connectionAfter.getSelectedRelationships().toString() : connectionAfter.getName())
+                            + "` to `" + connectionAfter.getDestination().getName() + "` has changed from `"
+                            + connectionBefore.getSource().getName() + "` to `"
+                            + connectionAfter.getSource().getName() + "`");
+                    break;
+                }
                 case PROPERTY_CHANGED: {
                     System.out.println("- In " + printComponent(diff.getComponentA()) + ", the value of the property "
                             + "`" + diff.getFieldName().get() + "` changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
