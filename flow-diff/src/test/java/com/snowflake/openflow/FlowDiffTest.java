@@ -17,18 +17,25 @@
 package com.snowflake.openflow;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.nifi.registry.flow.diff.DifferenceType;
 import org.apache.nifi.registry.flow.diff.FlowDifference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -113,7 +120,7 @@ class FlowDiffTest {
     }
 
     @Test
-    void testMain() throws IOException {
+    void testMain(@TempDir final Path tempDir) throws IOException {
         // Arguments: flowA, flowB, token, repository, issuenumber, checkstyle, checkstyle-rules, checkstyle-fail
         final int exitCode = FlowDiff.run(new String[] {
                 "src/test/resources/flow_v3_config_changes.json,src/test/resources/flow_v5_property_parameter.json",
@@ -121,6 +128,82 @@ class FlowDiffTest {
                 "", "", "",  // no GitHub API
                 "true" });
         assertEquals(0, exitCode);
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectNode flowWithValues = readSnapshot(objectMapper, "src/test/resources/flow_v4_parameters.json");
+        final ObjectNode flowWithNulls = flowWithValues.deepCopy();
+
+        final String populatedComment = "comment before null";
+        final String populatedProperty = "https://example.invalid/test";
+        final String populatedDescription = "description before null";
+        final String populatedLabel = "label before null";
+
+        ((ObjectNode) flowWithValues.at("/flowContents/processors/0")).put("comments", populatedComment);
+        ((ObjectNode) flowWithNulls.at("/flowContents/processors/0")).putNull("comments");
+        ((ObjectNode) flowWithValues.at("/flowContents/processors/0/properties")).put("HTTP URL", populatedProperty);
+        ((ObjectNode) flowWithNulls.at("/flowContents/processors/0/properties")).putNull("HTTP URL");
+        ((ObjectNode) flowWithValues.at("/parameterContexts/Test Parameter Context/parameters/0")).put("description", populatedDescription);
+        ((ObjectNode) flowWithNulls.at("/parameterContexts/Test Parameter Context/parameters/0")).putNull("description");
+
+        final ObjectNode label = objectMapper.createObjectNode();
+        label.put("componentType", "LABEL");
+        label.put("groupIdentifier", "flow-contents-group");
+        label.put("identifier", "synthetic-null-label");
+        label.put("label", populatedLabel);
+        label.put("width", 160.0);
+        label.put("height", 40.0);
+        label.set("position", objectMapper.createObjectNode().put("x", 10.0).put("y", 10.0));
+        label.set("style", objectMapper.createObjectNode());
+        ((ArrayNode) flowWithValues.at("/flowContents/labels")).add(label.deepCopy());
+        ((ArrayNode) flowWithNulls.at("/flowContents/labels")).add(label.deepCopy().putNull("label"));
+
+        final Path populatedSnapshot = writeSnapshot(objectMapper, flowWithValues, tempDir.resolve("flow-populated.json"));
+        final Path nullSnapshot = writeSnapshot(objectMapper, flowWithNulls, tempDir.resolve("flow-null.json"));
+        final Path[] beforeSnapshots = { populatedSnapshot, nullSnapshot };
+        final Path[] afterSnapshots = { nullSnapshot, populatedSnapshot };
+        final DifferenceType[] propertyDiffTypes = { DifferenceType.PROPERTY_REMOVED, DifferenceType.PROPERTY_ADDED };
+
+        for (int i = 0; i < beforeSnapshots.length; i++) {
+            final boolean populatedToNull = i == 0;
+            final Set<FlowDifference> diffs = FlowDiff.getDiff(beforeSnapshots[i].toString(), afterSnapshots[i].toString(), false, null);
+            assertEquals(Set.of(DifferenceType.COMMENTS_CHANGED, DifferenceType.PARAMETER_DESCRIPTION_CHANGED,
+                    DifferenceType.LABEL_VALUE_CHANGED, propertyDiffTypes[i]),
+                    diffs.stream().map(FlowDifference::getDifferenceType).collect(Collectors.toSet()));
+            assertEquals(4, diffs.size());
+
+            for (final FlowDifference diff : diffs) {
+                assertNull(populatedToNull ? diff.getValueB() : diff.getValueA());
+                switch (diff.getDifferenceType()) {
+                    case COMMENTS_CHANGED -> assertEquals(populatedComment, populatedToNull ? diff.getValueA() : diff.getValueB());
+                    case PARAMETER_DESCRIPTION_CHANGED -> {
+                        assertEquals("new param", diff.getFieldName().orElseThrow());
+                        assertEquals(populatedDescription, populatedToNull ? diff.getValueA() : diff.getValueB());
+                    }
+                    case LABEL_VALUE_CHANGED -> assertEquals(populatedLabel, populatedToNull ? diff.getValueA() : diff.getValueB());
+                    case PROPERTY_ADDED, PROPERTY_REMOVED -> {
+                        assertEquals(propertyDiffTypes[i], diff.getDifferenceType());
+                        assertEquals("HTTP URL", diff.getFieldName().orElseThrow());
+                        assertEquals(populatedProperty, populatedToNull ? diff.getValueA() : diff.getValueB());
+                    }
+                    default -> throw new AssertionError("Unexpected diff: " + diff);
+                }
+            }
+
+            for (final boolean flowGraphEnabled : new boolean[] { false, true }) {
+                assertEquals(0, FlowDiff.run(new String[] {
+                        beforeSnapshots[i].toString(),
+                        afterSnapshots[i].toString(),
+                        "", "", "",
+                        "false",
+                        "", "false", "",
+                        Boolean.toString(flowGraphEnabled) }));
+            }
+        }
+
+        assertEquals("`null` to `null`", FlowDiff.printFromTo(null, null));
+        assertEquals("`null` to `value`", FlowDiff.printFromTo(null, "value"));
+        assertEquals("\n```\nnull\n```\nto\n```\nvalue\nnext\n```", FlowDiff.printFromTo(null, "value\nnext"));
+        assertEquals("\n```\nvalue\nnext\n```\nto\n```\nother\n```", FlowDiff.printFromTo("value\nnext", "other"));
     }
 
     @Test
@@ -296,5 +379,14 @@ class FlowDiffTest {
             System.setOut(orig);
         }
         return buf.toString(StandardCharsets.UTF_8);
+    }
+
+    private static ObjectNode readSnapshot(final ObjectMapper objectMapper, final String path) throws IOException {
+        return (ObjectNode) objectMapper.readTree(Path.of(path).toFile());
+    }
+
+    private static Path writeSnapshot(final ObjectMapper objectMapper, final ObjectNode snapshot, final Path path) throws IOException {
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), snapshot);
+        return path;
     }
 }
