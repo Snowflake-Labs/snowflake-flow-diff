@@ -362,7 +362,7 @@ public class FlowDiff {
                 }
                 case PROPERTY_CHANGED: {
                     System.out.println("- In " + printComponent(diff.getComponentA()) + ", the value of the property "
-                            + "`" + diff.getFieldName().get() + "` changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                            + "`" + diff.getFieldName().get() + "` changed from " + printFromTo(diff.getValueA(), diff.getValueB()));
                     break;
                 }
                 case CONCURRENT_TASKS_CHANGED: {
@@ -563,7 +563,7 @@ public class FlowDiff {
                     final String paramKey = diff.getFieldName().get();
                     final VersionedParameterContext pdcPc = (VersionedParameterContext) diff.getComponentA();
                     System.out.println("- In the Parameter Context `" + pdcPc.getName() + "` the description of the parameter `"
-                            + paramKey + "` has changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                            + paramKey + "` has changed from " + printFromTo(diff.getValueA(), diff.getValueB()));
                     break;
                 case PRIORITIZERS_CHANGED:
                     final VersionedConnection connectionPrio = (VersionedConnection) diff.getComponentA();
@@ -597,7 +597,7 @@ public class FlowDiff {
                     break;
                 case COMMENTS_CHANGED:
                     System.out.println("- The comment for the " + printComponent(diff.getComponentA())
-                            + " has been changed from " + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                            + " has been changed from " + printFromTo(diff.getValueA(), diff.getValueB()));
                     break;
                 case RETRIED_RELATIONSHIPS_CHANGED:
                     System.out.println("- In " + printComponent(diff.getComponentA())
@@ -605,7 +605,7 @@ public class FlowDiff {
                     break;
                 case LABEL_VALUE_CHANGED:
                     System.out.println("- A label has been updated and its text has been changed from "
-                            + printFromTo(diff.getValueA().toString(), diff.getValueB().toString()));
+                            + printFromTo(diff.getValueA(), diff.getValueB()));
                     break;
                 case EXECUTION_MODE_CHANGED:
                     System.out.println("- In " + printComponent(diff.getComponentB())
@@ -1007,11 +1007,13 @@ public class FlowDiff {
         }
     }
 
-    static String printFromTo(final String from, final String to) {
-        if (isMultiline(from) || isMultiline(to)) {
-            return "\n```\n" + from + "\n```\nto\n```\n" + to + "\n```";
+    static String printFromTo(final Object from, final Object to) {
+        final String fromValue = String.valueOf(from);
+        final String toValue = String.valueOf(to);
+        if (isMultiline(fromValue) || isMultiline(toValue)) {
+            return "\n```\n" + fromValue + "\n```\nto\n```\n" + toValue + "\n```";
         }
-        return "`" + from + "` to `" + to + "`";
+        return "`" + fromValue + "` to `" + toValue + "`";
     }
 
     static boolean isEmpty(final String string) {
