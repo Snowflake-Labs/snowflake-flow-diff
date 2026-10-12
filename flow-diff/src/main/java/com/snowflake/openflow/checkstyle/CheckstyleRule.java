@@ -22,6 +22,9 @@ import java.util.List;
 
 public interface CheckstyleRule {
 
-    List<String> check(final FlowSnapshotContainer container, final String flowName, final CheckstyleRulesConfig.RuleConfig config);
+    List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final CheckstyleRulesConfig.RuleConfig config);
 
 }

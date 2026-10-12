@@ -33,8 +33,11 @@ public class BackpressureThresholdRule implements CheckstyleRule {
     private static final Pattern LEADING_NUMBER_PATTERN = Pattern.compile("^\\s*([0-9]+(?:\\.[0-9]+)?)");
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
-        final VersionedProcessGroup rootProcessGroup = container.getFlowSnapshot().getFlowContents();
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
+        final VersionedProcessGroup rootProcessGroup = currentFlowSnapshotContainer.getFlowSnapshot().getFlowContents();
         return checkProcessGroup(rootProcessGroup, config, flowName);
     }
 

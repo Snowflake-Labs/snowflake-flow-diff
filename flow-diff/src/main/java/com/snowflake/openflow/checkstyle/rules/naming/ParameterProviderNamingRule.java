@@ -27,8 +27,11 @@ import java.util.Map;
 public class ParameterProviderNamingRule extends AbstractNamingRule {
 
     @Override
-    public List<String> check(final FlowSnapshotContainer container, final String flowName, final RuleConfig config) {
-        final Map<String, ParameterProviderReference> parameterProviders = container.getFlowSnapshot().getParameterProviders();
+    public List<String> check(final FlowSnapshotContainer previousFlowSnapshotContainer,
+            final FlowSnapshotContainer currentFlowSnapshotContainer,
+            final String flowName,
+            final RuleConfig config) {
+        final Map<String, ParameterProviderReference> parameterProviders = currentFlowSnapshotContainer.getFlowSnapshot().getParameterProviders();
         if (parameterProviders == null || parameterProviders.isEmpty()) {
             return List.of();
         }

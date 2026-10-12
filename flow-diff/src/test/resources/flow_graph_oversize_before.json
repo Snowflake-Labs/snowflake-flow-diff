@@ -1,0 +1,46 @@
+{
+  "externalControllerServices": {},
+  "flow": {
+    "createdTimestamp": 1726000168945,
+    "description": "flow graph oversize before",
+    "identifier": "flow-graph-oversize",
+    "lastModifiedTimestamp": 1726000168945,
+    "name": "OversizeFlow",
+    "versionCount": 0
+  },
+  "flowContents": {
+    "comments": "",
+    "componentType": "PROCESS_GROUP",
+    "connections": [],
+    "controllerServices": [],
+    "defaultBackPressureDataSizeThreshold": "1 GB",
+    "defaultBackPressureObjectThreshold": 10000,
+    "defaultFlowFileExpiration": "0 sec",
+    "executionEngine": "INHERITED",
+    "externalControllerServiceReferences": {},
+    "flowFileConcurrency": "UNBOUNDED",
+    "flowFileOutboundPolicy": "STREAM_WHEN_AVAILABLE",
+    "funnels": [],
+    "identifier": "oversize-root-pg",
+    "inputPorts": [],
+    "labels": [],
+    "maxConcurrentTasks": 1,
+    "name": "OversizeFlow",
+    "outputPorts": [],
+    "position": {"x": 0.0, "y": 0.0},
+    "processGroups": [],
+    "processors": [],
+    "remoteProcessGroups": [],
+    "scheduledState": "ENABLED",
+    "statelessFlowTimeout": "1 min"
+  },
+  "flowEncodingVersion": "1.0",
+  "latest": false,
+  "parameterContexts": {},
+  "parameterProviders": {},
+  "snapshotMetadata": {
+    "author": "test",
+    "flowIdentifier": "flow-graph-oversize",
+    "timestamp": 0
+  }
+}
