@@ -241,6 +241,34 @@ class FlowDiffTest {
     }
 
     @Test
+    void testAnnotationDataChangeIsRenderedAsFencedXml() throws IOException {
+        final String criteria = "<criteria>\\n    <rules>\\n        <conditions>\\n"
+                + "            <expression>${filename:contains('Test_Name')}</expression>\\n"
+                + "        </conditions>\\n    </rules>\\n</criteria>";
+        final Path updatedFlow = tempDir.resolve("flow_annotation_data.json");
+        final String originalFlow = Files.readString(Path.of("src/test/resources/flow_v1_initial.json"));
+        final String annotatedFlow = originalFlow.replace(
+                "\"type\" : \"org.apache.nifi.processors.attributes.UpdateAttribute\",",
+                "\"annotationData\" : \"" + criteria + "\",\n      \"type\" : \"org.apache.nifi.processors.attributes.UpdateAttribute\",");
+        Files.writeString(updatedFlow, annotatedFlow);
+
+        final Set<FlowDifference> diffs = FlowDiff.getDiff("src/test/resources/flow_v1_initial.json", updatedFlow.toString(), false, null);
+        final FlowDifference annotationChange = diffs.stream()
+                .filter(d -> d.getDifferenceType() == DifferenceType.ANNOTATION_DATA_CHANGED)
+                .findFirst()
+                .orElseThrow();
+
+        final String rendered = FlowDiff.printAnnotationDataChange(annotationChange.getValueA(), annotationChange.getValueB());
+        assertTrue(rendered.startsWith("the advanced configuration has been added:\n```xml\n<criteria>"));
+        assertTrue(rendered.contains("<expression>${filename:contains('Test_Name')}</expression>"));
+        assertTrue(rendered.endsWith("</criteria>\n```"));
+
+        final String changed = FlowDiff.printAnnotationDataChange("<criteria/>", "<a>```</a>");
+        assertTrue(changed.contains("\n```xml\n<criteria/>\n```\nto\n````xml\n<a>```</a>\n````"));
+        assertEquals("``a`b``", FlowDiff.inlineCode("a`b"));
+    }
+
+    @Test
     void testDuplicateKeyInFlowBThrowsException() {
         assertThrows(JsonParseException.class, () ->
             FlowDiff.getDiff(

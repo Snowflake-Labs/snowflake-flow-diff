@@ -631,13 +631,19 @@ public class FlowDiff {
                             + printVFCChanges(vfcBefore, vfcAfter));
                     break;
 
+                case ANNOTATION_DATA_CHANGED: {
+                    System.out.println("- In " + printComponent(diff.getComponentA()) + ", "
+                            + printAnnotationDataChange(diff.getValueA(), diff.getValueB()));
+                    break;
+                }
+
                 default:
-                    System.out.println("- " + diff.getDescription() + " (" + diff.getDifferenceType() + ")");
-                    System.out.println("  - " + diff.getValueA());
-                    System.out.println("  - " + diff.getValueB());
-                    System.out.println("  - " + diff.getComponentA());
-                    System.out.println("  - " + diff.getComponentB());
-                    System.out.println("  - " + diff.getFieldName());
+                    System.out.println("- " + formatValue(diff.getDescription()) + " (" + diff.getDifferenceType() + ")");
+                    System.out.println("  - " + formatValue(diff.getValueA()));
+                    System.out.println("  - " + formatValue(diff.getValueB()));
+                    System.out.println("  - " + formatValue(diff.getComponentA()));
+                    System.out.println("  - " + formatValue(diff.getComponentB()));
+                    System.out.println("  - " + formatValue(diff.getFieldName()));
                     break;
                 }
                 } // end inner diff loop
@@ -1011,9 +1017,63 @@ public class FlowDiff {
         final String fromValue = String.valueOf(from);
         final String toValue = String.valueOf(to);
         if (isMultiline(fromValue) || isMultiline(toValue)) {
-            return "\n```\n" + fromValue + "\n```\nto\n```\n" + toValue + "\n```";
+            return fencedBlock(fromValue, "") + "\nto" + fencedBlock(toValue, "");
         }
-        return "`" + fromValue + "` to `" + toValue + "`";
+        return inlineCode(fromValue) + " to " + inlineCode(toValue);
+    }
+
+    static String printAnnotationDataChange(final Object before, final Object after) {
+        final String beforeValue = before == null ? null : before.toString();
+        final String afterValue = after == null ? null : after.toString();
+        if (isEmpty(beforeValue)) {
+            return "the advanced configuration has been added:" + fencedBlock(afterValue, detectLanguage(afterValue));
+        }
+        if (isEmpty(afterValue)) {
+            return "the advanced configuration has been removed:" + fencedBlock(beforeValue, detectLanguage(beforeValue));
+        }
+        return "the advanced configuration changed from" + fencedBlock(beforeValue, detectLanguage(beforeValue))
+                + "\nto" + fencedBlock(afterValue, detectLanguage(afterValue));
+    }
+
+    static String formatValue(final Object value) {
+        final String str = String.valueOf(value);
+        return isMultiline(str) ? fencedBlock(str, "") : inlineCode(str);
+    }
+
+    static String inlineCode(final String value) {
+        final String delimiter = "`".repeat(longestBacktickRun(value) + 1);
+        final String padding = value.startsWith("`") || value.endsWith("`") ? " " : "";
+        return delimiter + padding + value + padding + delimiter;
+    }
+
+    static String fencedBlock(final String value, final String language) {
+        final String fence = "`".repeat(Math.max(3, longestBacktickRun(value) + 1));
+        return "\n" + fence + language + "\n" + value + "\n" + fence;
+    }
+
+    static String detectLanguage(final String value) {
+        final String trimmed = value.trim();
+        if (trimmed.startsWith("<")) {
+            return "xml";
+        }
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+            return "json";
+        }
+        return "";
+    }
+
+    static int longestBacktickRun(final String value) {
+        int longest = 0;
+        int current = 0;
+        for (int i = 0; i < value.length(); i++) {
+            if (value.charAt(i) == '`') {
+                current++;
+                longest = Math.max(longest, current);
+            } else {
+                current = 0;
+            }
+        }
+        return longest;
     }
 
     static boolean isEmpty(final String string) {
